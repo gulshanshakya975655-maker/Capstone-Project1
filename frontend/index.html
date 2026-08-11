@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TaskFlow - Task Management</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- ============================= -->
+        <!-- HEADER -->
+        <!-- ============================= -->
+
+        <header>
+            <h1>🚀 TaskFlow</h1>
+            <p>Manage your tasks easily</p>
+        </header>
+
+
+        <!-- ============================= -->
+        <!-- CREATE TASK -->
+        <!-- ============================= -->
+
+        <form class="task-form">
+
+            <h2>Create New Task</h2>
+
+            <input
+                type="text"
+                id="title"
+                placeholder="Task title"
+                required
+            >
+
+            <select id="priority">
+
+                <option value="low">
+                    Low
+                </option>
+
+                <option value="medium" selected>
+                    Medium
+                </option>
+
+                <option value="high">
+                    High
+                </option>
+
+            </select>
+
+            <input
+                type="date"
+                id="due_date"
+            >
+
+            <button type="submit">
+                Add Task
+            </button>
+
+        </form>
+
+<form id="quickAddForm">
+    <h2>🤖 AI Quick-Add</h2>
+
+    <input
+        type="text"
+        id="quickAddInput"
+        placeholder="e.g. Finish report tomorrow, urgent"
+        required
+    >
+
+    <button type="submit">Quick Add</button>
+</form>
+
+<div id="quickAddResult"></div>
+
+
+        <!-- ============================= -->
+        <!-- TASKS -->
+        <!-- ============================= -->
+
+        <section class="tasks-section">
+
+            <h2>My Tasks</h2>
+
+
+            <!-- SEARCH + FILTER -->
+
+            <div class="task-filters">
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="🔎 Search tasks..."
+                >
+
+
+                <select id="priorityFilter">
+
+                    <option value="all">
+                        All Priorities
+                    </option>
+
+                    <option value="low">
+                        Low
+                    </option>
+
+                    <option value="medium">
+                        Medium
+                    </option>
+
+                    <option value="high">
+                        High
+                    </option>
+
+                </select>
+
+
+                <select id="statusFilter">
+
+                    <option value="all">
+                        All Status
+                    </option>
+
+                    <option value="pending">
+                        Pending
+                    </option>
+
+                    <option value="completed">
+                        Completed
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- TASK SUMMARY -->
+
+            <div class="task-summary">
+
+                <div class="summary-box">
+
+                    <h3 id="totalTasks">
+                        0
+                    </h3>
+
+                    <p>
+                        Total Tasks
+                    </p>
+
+                </div>
+
+
+                <div class="summary-box">
+
+                    <h3 id="pendingTasks">
+                        0
+                    </h3>
+
+                    <p>
+                        Pending
+                    </p>
+
+                </div>
+
+
+                <div class="summary-box">
+
+                    <h3 id="completedTasks">
+                        0
+                    </h3>
+
+                    <p>
+                        Completed
+                    </p>
+
+                </div>
+
+
+                <div class="summary-box">
+
+                    <h3 id="highPriorityTasks">
+                        0
+                    </h3>
+
+                    <p>
+                        High Priority
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- TASK LIST -->
+
+            <div id="tasks">
+
+                <p>
+                    Loading tasks...
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- ============================= -->
+        <!-- USER MANAGEMENT -->
+        <!-- ============================= -->
+
+        <section class="tasks-section">
+
+            <h2>👤 User Management</h2>
+
+            <form id="userForm">
+
+                <input
+                    type="text"
+                    id="userName"
+                    placeholder="User name"
+                    required
+                >
+
+                <input
+                    type="email"
+                    id="userEmail"
+                    placeholder="User email"
+                    required
+                >
+
+                <button type="submit">
+                    Create User
+                </button>
+
+            </form>
+
+
+            <div id="users">
+
+                <p>
+                    Loading users...
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- ============================= -->
+        <!-- PROJECT MANAGEMENT -->
+        <!-- ============================= -->
+
+        <section class="tasks-section">
+
+            <h2>📁 Project Management</h2>
+
+            <form id="projectForm">
+
+                <input
+                    type="text"
+                    id="projectName"
+                    placeholder="Project name"
+                    required
+                >
+
+                <input
+                    type="number"
+                    id="projectOwnerId"
+                    placeholder="Owner User ID"
+                    required
+                >
+
+                <button type="submit">
+                    Create Project
+                </button>
+
+            </form>
+
+
+            <div id="projects">
+
+                <p>
+                    Loading projects...
+                </p>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <!-- ============================= -->
+    <!-- JAVASCRIPT -->
+    <!-- ============================= -->
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
