@@ -1,260 +1,326 @@
 from algorithms import (
     insertion_sort,
-    insertion_sort_with_comparisons,
-    linear_search,
-    linear_search_with_comparisons,
     binary_search,
-    binary_search_with_comparisons,
+    linear_search,
+    insertion_sort_count,
+    binary_search_count,
+    linear_search_count,
 )
 
 
-def check(name, actual, expected):
-    if actual == expected:
-        print(f"PASS - {name}")
+def check(case_name, result, expected):
+    if result == expected:
+        print(f"PASS: {case_name}")
         return True
-
-    print(f"FAIL - {name}")
-    print(f"Expected: {expected}")
-    print(f"Actual:   {actual}")
-    return False
+    else:
+        print(
+            f"FAIL: {case_name} — expected {expected}, got {result}"
+        )
+        return False
 
 
 def main():
     passed = 0
     total = 0
 
+    # ==========================================
+    # 1. INSERTION SORT - EMPTY LIST
+    # ==========================================
+
+    records = []
+
+    insertion_sort(records, "title")
+
+    total += 1
+    if check(
+        "Insertion sort empty list",
+        records,
+        []
+    ):
+        passed += 1
+
+    # ==========================================
+    # 2. INSERTION SORT - SINGLE ELEMENT
+    # ==========================================
+
     records = [
-        {"title": "ramesh", "priority": "high"},
-        {"title": "cow story", "priority": "low"},
-        {"title": "Frontend Test", "priority": "medium"},
-        {"title": "Apple", "priority": "high"},
-        {"title": "Banana", "priority": "low"},
+        {"title": "Only Task"}
     ]
 
-    # ==========================================
-    # INSERTION SORT
-    # ==========================================
+    insertion_sort(records, "title")
 
     total += 1
-
-    sorted_records = insertion_sort(
+    if check(
+        "Insertion sort single element",
         records,
-        "title"
-    )
+        [{"title": "Only Task"}]
+    ):
+        passed += 1
 
-    sorted_titles = [
-        record["title"]
-        for record in sorted_records
+    # ==========================================
+    # 3. INSERTION SORT - NORMAL CASE
+    # ==========================================
+
+    records = [
+        {"title": "Banana"},
+        {"title": "Apple"},
+        {"title": "Cherry"},
     ]
 
-    expected_titles = [
+    insertion_sort(records, "title")
+
+    expected = [
+        {"title": "Apple"},
+        {"title": "Banana"},
+        {"title": "Cherry"},
+    ]
+
+    total += 1
+    if check(
+        "Insertion sort normal case",
+        records,
+        expected
+    ):
+        passed += 1
+
+    # ==========================================
+    # 4. BINARY SEARCH - FIRST INDEX
+    # ==========================================
+
+    records = [
+        {"title": "Apple"},
+        {"title": "Banana"},
+        {"title": "Cherry"},
+        {"title": "Mango"},
+        {"title": "Orange"},
+    ]
+
+    result = binary_search(
+        records,
         "Apple",
-        "Banana",
-        "Frontend Test",
-        "cow story",
-        "ramesh",
-    ]
-
-    if check(
-        "Insertion Sort",
-        sorted_titles,
-        expected_titles
-    ):
-        passed += 1
-
-    # ==========================================
-    # INPUT NOT MUTATED
-    # ==========================================
-
-    original_records = [record.copy() for record in records]
-
-    insertion_sort(
-        records,
         "title"
     )
 
     total += 1
-
     if check(
-        "Input Not Mutated",
-        records,
-        original_records
-    ):
-        passed += 1
-
-    # ==========================================
-    # INSERTION SORT WITH COMPARISONS
-    # ==========================================
-
-    sorted_records, comparisons = (
-        insertion_sort_with_comparisons(
-            records,
-            "title"
-        )
-    )
-
-    total += 1
-
-    if check(
-        "Insertion Sort Comparison Result",
-        [
-            record["title"]
-            for record in sorted_records
-        ],
-        expected_titles
-    ):
-        passed += 1
-
-    total += 1
-
-    if comparisons > 0:
-        print(
-            f"PASS - Insertion Sort Comparisons ({comparisons})"
-        )
-        passed += 1
-    else:
-        print("FAIL - Insertion Sort Comparisons")
-
-    # ==========================================
-    # LINEAR SEARCH - FOUND
-    # ==========================================
-
-    index, comparisons = linear_search(
-        records,
-        "ramesh",
-        "title"
-    )
-
-    total += 1
-
-    if check(
-        "Linear Search Found",
-        index,
+        "Binary search first index",
+        result,
         0
     ):
         passed += 1
 
-    total += 1
-
-    if comparisons > 0:
-        print(
-            f"PASS - Linear Search Comparisons ({comparisons})"
-        )
-        passed += 1
-    else:
-        print("FAIL - Linear Search Comparisons")
-
     # ==========================================
-    # LINEAR SEARCH - NOT FOUND
+    # 5. BINARY SEARCH - LAST INDEX
     # ==========================================
 
-    index, comparisons = linear_search(
+    result = binary_search(
         records,
-        "Not Found",
+        "Orange",
         "title"
     )
 
     total += 1
-
     if check(
-        "Linear Search Not Found",
-        index,
-        -1
-    ):
-        passed += 1
-
-    # ==========================================
-    # LINEAR SEARCH WITH COMPARISONS
-    # ==========================================
-
-    index, comparisons = (
-        linear_search_with_comparisons(
-            records,
-            "Frontend Test",
-            "title"
-        )
-    )
-
-    total += 1
-
-    if check(
-        "Linear Search With Comparisons",
-        index,
-        2
-    ):
-        passed += 1
-
-    # ==========================================
-    # BINARY SEARCH
-    # ==========================================
-
-    binary_records = insertion_sort(
-        records,
-        "title"
-    )
-
-    index, comparisons = binary_search(
-        binary_records,
-        "Frontend Test",
-        "title"
-    )
-
-    total += 1
-
-    if check(
-        "Binary Search Found",
-        index,
-        2
-    ):
-        passed += 1
-
-    total += 1
-
-    if comparisons > 0:
-        print(
-            f"PASS - Binary Search Comparisons ({comparisons})"
-        )
-        passed += 1
-    else:
-        print("FAIL - Binary Search Comparisons")
-
-    # ==========================================
-    # BINARY SEARCH - NOT FOUND
-    # ==========================================
-
-    index, comparisons = binary_search(
-        binary_records,
-        "ZZZZ",
-        "title"
-    )
-
-    total += 1
-
-    if check(
-        "Binary Search Not Found",
-        index,
-        -1
-    ):
-        passed += 1
-
-    # ==========================================
-    # BINARY SEARCH WITH COMPARISONS
-    # ==========================================
-
-    index, comparisons = (
-        binary_search_with_comparisons(
-            binary_records,
-            "ramesh",
-            "title"
-        )
-    )
-
-    total += 1
-
-    if check(
-        "Binary Search With Comparisons",
-        index,
+        "Binary search last index",
+        result,
         4
+    ):
+        passed += 1
+
+    # ==========================================
+    # 6. BINARY SEARCH - MIDDLE INDEX
+    # ==========================================
+
+    result = binary_search(
+        records,
+        "Cherry",
+        "title"
+    )
+
+    total += 1
+    if check(
+        "Binary search middle index",
+        result,
+        2
+    ):
+        passed += 1
+
+    # ==========================================
+    # 7. BINARY SEARCH - NOT FOUND
+    # ==========================================
+
+    result = binary_search(
+        records,
+        "Watermelon",
+        "title"
+    )
+
+    total += 1
+    if check(
+        "Binary search not found",
+        result,
+        -1
+    ):
+        passed += 1
+
+    # ==========================================
+    # 8. LINEAR SEARCH - FOUND
+    # ==========================================
+
+    records = [
+        {"title": "Apple"},
+        {"title": "Banana"},
+        {"title": "Cherry"},
+    ]
+
+    result = linear_search(
+        records,
+        "Banana",
+        "title"
+    )
+
+    total += 1
+    if check(
+        "Linear search found",
+        result,
+        1
+    ):
+        passed += 1
+
+    # ==========================================
+    # 9. LINEAR SEARCH - NOT FOUND
+    # ==========================================
+
+    result = linear_search(
+        records,
+        "Mango",
+        "title"
+    )
+
+    total += 1
+    if check(
+        "Linear search not found",
+        result,
+        -1
+    ):
+        passed += 1
+
+    # ==========================================
+    # 10. INSERTION SORT COUNT
+    # ==========================================
+
+    records = [
+        {"value": 5},
+        {"value": 1},
+        {"value": 3},
+        {"value": 2},
+        {"value": 4},
+    ]
+
+    comparison_count = insertion_sort_count(
+        records,
+        "value"
+    )
+
+    expected_records = [
+        {"value": 1},
+        {"value": 2},
+        {"value": 3},
+        {"value": 4},
+        {"value": 5},
+    ]
+
+    total += 1
+    if check(
+        "Insertion sort count sorted result",
+        records,
+        expected_records
+    ):
+        passed += 1
+
+    # comparison_count must be int > 0
+    total += 1
+
+    if (
+        type(comparison_count) == int
+        and comparison_count > 0
+    ):
+        print(
+            f"PASS: Insertion sort comparison count "
+            f"({comparison_count})"
+        )
+        passed += 1
+    else:
+        print(
+            "FAIL: Insertion sort comparison count"
+        )
+
+    # ==========================================
+    # 11. BINARY SEARCH COUNT
+    # ==========================================
+
+    records = [
+        {"value": 1},
+        {"value": 2},
+        {"value": 3},
+        {"value": 4},
+        {"value": 5},
+    ]
+
+    result = binary_search_count(
+        records,
+        3,
+        "value"
+    )
+
+    total += 1
+
+    if (
+        type(result) == dict
+        and result.get("index") == 2
+        and type(result.get("comparison_count")) == int
+        and result.get("comparison_count") > 0
+    ):
+        print(
+            f"PASS: Binary search count "
+            f"({result})"
+        )
+        passed += 1
+    else:
+        print(
+            f"FAIL: Binary search count — "
+            f"got {result}"
+        )
+
+    # ==========================================
+    # 12. LINEAR SEARCH COUNT - ABSENT VALUE
+    # ==========================================
+
+    records = [
+        {"value": 1},
+        {"value": 2},
+        {"value": 3},
+        {"value": 4},
+        {"value": 5},
+    ]
+
+    result = linear_search_count(
+        records,
+        99,
+        "value"
+    )
+
+    total += 1
+
+    expected = {
+        "index": -1,
+        "comparison_count": 5
+    }
+
+    if check(
+        "Linear search count absent value",
+        result,
+        expected
     ):
         passed += 1
 

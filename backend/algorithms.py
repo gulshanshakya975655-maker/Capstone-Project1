@@ -1,15 +1,102 @@
+# backend/algorithms.py
+
+
 def insertion_sort(records, key):
-    records = records.copy()
-    comparisons = 0
+    """
+    Sort a list of dictionaries in-place using insertion sort.
+
+    Example:
+        records = [
+            {"title": "B"},
+            {"title": "A"},
+            {"title": "C"}
+        ]
+
+        insertion_sort(records, "title")
+
+    records becomes:
+        [{"title": "A"}, {"title": "B"}, {"title": "C"}]
+    """
 
     for i in range(1, len(records)):
         current = records[i]
+        current_value = current[key]
+
+        j = i - 1
+
+        while j >= 0 and records[j][key] > current_value:
+            records[j + 1] = records[j]
+            j -= 1
+
+        records[j + 1] = current
+
+
+def binary_search(sorted_records, target_value, key):
+    """
+    Binary search on records already sorted by key.
+
+    Returns:
+        index if found
+        -1 if not found
+    """
+
+    low = 0
+    high = len(sorted_records) - 1
+
+    while low <= high:
+        mid = (low + high) // 2
+
+        value = sorted_records[mid][key]
+
+        if value == target_value:
+            return mid
+
+        if value < target_value:
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    return -1
+
+
+def linear_search(records, target_value, key):
+    """
+    Linear search.
+
+    Returns:
+        first matching index
+        -1 if not found
+    """
+
+    for index, record in enumerate(records):
+        if record[key] == target_value:
+            return index
+
+    return -1
+
+
+# =========================================================
+# COUNTING WRAPPERS
+# =========================================================
+
+def insertion_sort_count(records, key):
+    """
+    Same insertion-sort logic as insertion_sort(),
+    but returns only the number of comparisons.
+    """
+
+    comparison_count = 0
+
+    for i in range(1, len(records)):
+        current = records[i]
+        current_value = current[key]
+
         j = i - 1
 
         while j >= 0:
-            comparisons += 1
+            comparison_count += 1
 
-            if records[j][key] > current[key]:
+            if records[j][key] > current_value:
                 records[j + 1] = records[j]
                 j -= 1
             else:
@@ -17,87 +104,133 @@ def insertion_sort(records, key):
 
         records[j + 1] = current
 
-    return records
+    return comparison_count
 
 
-def linear_search(records, target_value, key):
-    comparisons = 0
+def binary_search_count(sorted_records, target_value, key):
+    """
+    Binary search with comparison counting.
+
+    Returns exactly:
+        {
+            "index": int,
+            "comparison_count": int
+        }
+    """
+
+    low = 0
+    high = len(sorted_records) - 1
+    comparison_count = 0
+
+    while low <= high:
+        mid = (low + high) // 2
+
+        comparison_count += 1
+
+        value = sorted_records[mid][key]
+
+        if value == target_value:
+            return {
+                "index": mid,
+                "comparison_count": comparison_count
+            }
+
+        if value < target_value:
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    return {
+        "index": -1,
+        "comparison_count": comparison_count
+    }
+
+
+def linear_search_count(records, target_value, key):
+    """
+    Linear search with comparison counting.
+
+    Returns exactly:
+        {
+            "index": int,
+            "comparison_count": int
+        }
+    """
+
+    comparison_count = 0
 
     for index, record in enumerate(records):
-        comparisons += 1
+        comparison_count += 1
 
-        if str(record[key]).lower() == str(target_value).lower():
-            return index, comparisons
+        if record[key] == target_value:
+            return {
+                "index": index,
+                "comparison_count": comparison_count
+            }
 
-    return -1, comparisons
-
-
-def binary_search(records, target_value, key):
-    left = 0
-    right = len(records) - 1
-    comparisons = 0
-
-    target = str(target_value).lower()
-
-    while left <= right:
-        middle = (left + right) // 2
-
-        current_value = str(
-            records[middle][key]
-        ).lower()
-
-        comparisons += 1
-
-        if current_value == target:
-            return middle, comparisons
-
-        if current_value < target:
-            left = middle + 1
-        else:
-            right = middle - 1
-
-    return -1, comparisons
+    return {
+        "index": -1,
+        "comparison_count": comparison_count
+    }
 
 
-def insertion_sort_with_comparisons(records, key):
-    sorted_records = insertion_sort(records, key)
+# =========================================================
+# BACKWARD-COMPATIBLE HELPERS
+# =========================================================
 
-    comparisons = 0
+def insertion_sort_with_comparisons(numbers):
+    """
+    Compatibility helper for the existing algorithm endpoint.
 
-    for i in range(1, len(records)):
-        current = records[i]
-        j = i - 1
+    Sorts a list of numbers in-place and returns:
+        sorted_list, comparison_count
+    """
 
-        while j >= 0:
-            comparisons += 1
+    records = [{"value": number} for number in numbers]
 
-            if records[j][key] > current[key]:
-                j -= 1
-            else:
-                break
+    comparisons = insertion_sort_count(records, "value")
 
-    return sorted_records, comparisons
+    sorted_numbers = [
+        record["value"]
+        for record in records
+    ]
+
+    return sorted_numbers, comparisons
 
 
-def linear_search_with_comparisons(
-    records,
-    target_value,
-    key
-):
-    return linear_search(
+def linear_search_with_comparisons(numbers, target):
+    """
+    Compatibility helper.
+    """
+
+    records = [{"value": number} for number in numbers]
+
+    result = linear_search_count(
         records,
-        target_value,
-        key
+        target,
+        "value"
+    )
+
+    return (
+        result["index"],
+        result["comparison_count"]
     )
 
 
-def binary_search_with_comparisons(
-    records,
-    target_value,
-    key
-):
-    return binary_search(
+def binary_search_with_comparisons(numbers, target):
+    """
+    Compatibility helper.
+    """
+
+    records = [{"value": number} for number in numbers]
+
+    result = binary_search_count(
         records,
-        target_value,
-        key
+        target,
+        "value"
+    )
+
+    return (
+        result["index"],
+        result["comparison_count"]
     )

@@ -1,109 +1,115 @@
 import time
 import re
-from datetime import date, timedelta
 
-import algorithms
-
+from backend import algorithms
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, ValidationError
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from database import Base, engine, get_db
-import models
-import schemas
+from backend.database import Base, engine, get_db
+from backend import models
+from backend import schemas
 
 
-# ==========================================
+# =========================================================
 # DATABASE
-# ==========================================
+# =========================================================
 
 Base.metadata.create_all(bind=engine)
 
 
-# ==========================================
+# =========================================================
 # FASTAPI APP
-# ==========================================
+# =========================================================
 
 app = FastAPI(
     title="TaskFlow API",
     description="Task and Project Management Platform",
-    version="1.0.0"
+    version="2.0.0",
 )
 
 
-# ==========================================
-# REQUEST TIME MIDDLEWARE
-# ==========================================
+# =========================================================
+# CUSTOM MIDDLEWARE
+# =========================================================
 
 @app.middleware("http")
 async def request_timer_middleware(request: Request, call_next):
-    start_time = time.perf_counter()
+    start = time.perf_counter()
 
     response = await call_next(request)
 
-    process_time = time.perf_counter() - start_time
+    elapsed_ms = (time.perf_counter() - start) * 1000
 
-    response.headers["X-Process-Time"] = f"{process_time:.6f}"
+    response.headers["X-Process-Time-Ms"] = f"{elapsed_ms:.2f}"
 
     print(
         f"{request.method} {request.url.path} "
-        f"- {response.status_code} "
-        f"- {process_time:.6f}s"
+        f"- {response.status_code} - {elapsed_ms:.2f} ms"
     )
 
     return response
 
 
-# ==========================================
+# =========================================================
 # CORS
-# ==========================================
+# =========================================================
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://127.0.0.1:5500",
-        "http://localhost:5500"
+        "http://localhost:5500",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=[
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS",
+    ],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+    ],
 )
 
 
-# ==========================================
+# =========================================================
 # HOME
-# ==========================================
+# =========================================================
 
 @app.get("/")
 def home():
-    return {
-        "message": "TaskFlow API is running!"
-    }
+    return {"message": "TaskFlow API is running!"}
 
 
-# ==========================================
-# CREATE TASK
-# ==========================================
+# =========================================================
+# TASK CREATE
+# =========================================================
 
 @app.post(
     "/tasks",
     response_model=schemas.TaskResponse,
-    status_code=201
+    status_code=201,
 )
 def create_task(
     task: schemas.TaskCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    project = db.query(models.Project).filter(
-        models.Project.id == task.project_id
-    ).first()
+    project = (
+        db.query(models.Project)
+        .filter(models.Project.id == task.project_id)
+        .first()
+    )
 
     if not project:
         raise HTTPException(
             status_code=404,
-            detail="Project not found"
+            detail="Project not found",
         )
 
     new_task = models.Task(
@@ -111,7 +117,7 @@ def create_task(
         priority=task.priority,
         due_date=task.due_date,
         status=task.status,
-        project_id=task.project_id
+        project_id=task.project_id,
     )
 
     db.add(new_task)
@@ -121,167 +127,211 @@ def create_task(
     return new_task
 
 
-# ==========================================
-# AI QUICK-ADD
-# ==========================================
+# =========================================================
+# QUICK ADD REQUEST
+# =========================================================
 
 class QuickAddRequest(BaseModel):
     description: str
     project_id: int
 
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, value):
+        if not value or not value.strip():
+            raise ValueError("description cannot be blank")
+
+        return value
+
+
+# =========================================================
+# QUICK ADD PROMPT
+# =========================================================
+
+def build_quick_add_prompt(description: str):
+    return {
+        "system": (
+            "You are TaskFlow's task parser. Convert a free-text "
+            "description into title, priority and due_date_hint. "
+            "Priority must be low, medium, or high."
+        ),
+        "user": description,
+    }
+
+
+# =========================================================
+# QUICK ADD MOCK PARSER
+# =========================================================
 
 def parse_quick_add(description: str):
-    """
-    Deterministic natural-language parser.
+    original = description or ""
 
-    Rules:
-    - urgent / asap -> high priority
-    - low priority / low -> low priority
-    - otherwise -> medium priority
-    - today -> today's date
-    - tomorrow -> tomorrow's date
-    - next week -> 7 days from today
-    - otherwise -> no due date
-    - title = cleaned description
-    """
+    # Working copy only for matching
+    lower_text = original.lower()
 
-    text = description.strip()
-
-    if not text:
-        raise HTTPException(
-            status_code=422,
-            detail="Description cannot be empty"
-        )
-
-    lower_text = text.lower()
-
-    # --------------------------------------
+    # -----------------------------------------------------
     # PRIORITY
-    # --------------------------------------
+    # -----------------------------------------------------
 
-    if (
-        "urgent" in lower_text
-        or "asap" in lower_text
-        or "high priority" in lower_text
-    ):
+    if "urgent" in lower_text or "asap" in lower_text:
         priority = "high"
 
     elif (
-        "low priority" in lower_text
-        or re.search(r"\blow\b", lower_text)
+        "whenever" in lower_text
+        or "low priority" in lower_text
     ):
         priority = "low"
 
     else:
         priority = "medium"
 
-    # --------------------------------------
+    # -----------------------------------------------------
     # DUE DATE
-    # --------------------------------------
+    # -----------------------------------------------------
 
-    due_date = None
-
-    if "tomorrow" in lower_text:
-        due_date = date.today() + timedelta(days=1)
-
-    elif "today" in lower_text:
-        due_date = date.today()
-
-    elif "next week" in lower_text:
-        due_date = date.today() + timedelta(days=7)
-
-    # --------------------------------------
-    # EXPLICIT DATE: YYYY-MM-DD
-    # --------------------------------------
-
-    date_match = re.search(
-        r"\b(20\d{2})-(\d{2})-(\d{2})\b",
-        text
-    )
-
-    if date_match:
-        try:
-            due_date = date(
-                int(date_match.group(1)),
-                int(date_match.group(2)),
-                int(date_match.group(3))
-            )
-        except ValueError:
-            raise HTTPException(
-                status_code=422,
-                detail="Invalid date"
-            )
-
-    # --------------------------------------
-    # CLEAN TITLE
-    # --------------------------------------
-
-    title = text
-
-    remove_phrases = [
-        "urgent",
-        "asap",
-        "high priority",
-        "low priority",
+    date_phrases = [
         "today",
         "tomorrow",
-        "next week"
+        "next week",
+        "next monday",
+        "next tuesday",
+        "next wednesday",
+        "next thursday",
+        "next friday",
+        "next saturday",
+        "next sunday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
     ]
 
-    for phrase in remove_phrases:
+    due_date_hint = None
+
+    for phrase in date_phrases:
+        pattern = r"\b" + re.escape(phrase) + r"\b"
+
+        if re.search(pattern, lower_text):
+            due_date_hint = phrase
+            break
+
+    # -----------------------------------------------------
+    # TITLE
+    # -----------------------------------------------------
+
+    title = original
+
+    # Remove ALL priority keywords
+    priority_phrases = [
+        "urgent",
+        "asap",
+        "whenever",
+        "low priority",
+    ]
+
+    for phrase in priority_phrases:
         title = re.sub(
-            re.escape(phrase),
+            r"\b" + re.escape(phrase) + r"\b",
             "",
             title,
-            flags=re.IGNORECASE
+            flags=re.IGNORECASE,
         )
 
-    title = re.sub(
-        r"\b20\d{2}-\d{2}-\d{2}\b",
-        "",
-        title
-    )
+    # Remove ALL occurrences of matched date phrase
+    if due_date_hint:
+        title = re.sub(
+            r"\b" + re.escape(due_date_hint) + r"\b",
+            "",
+            title,
+            flags=re.IGNORECASE,
+        )
 
-    title = re.sub(r"\s+", " ", title)
-    title = title.strip(" ,.-")
+    title = title.strip()
 
     if not title:
-        title = text
+        title = "Untitled task"
 
     return {
         "title": title,
         "priority": priority,
-        "due_date": due_date
+        "due_date_hint": due_date_hint,
     }
 
+
+# =========================================================
+# QUICK ADD ENDPOINT
+# =========================================================
 
 @app.post(
     "/tasks/quick-add",
     response_model=schemas.TaskResponse,
-    status_code=201
+    status_code=201,
 )
 def quick_add_task(
     data: QuickAddRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    project = db.query(models.Project).filter(
-        models.Project.id == data.project_id
-    ).first()
+    # Build standard system/user prompt structure
+    prompt = build_quick_add_prompt(data.description)
+
+    # Prevent unused-variable warnings while keeping
+    # the prompt structure available for future LLM support.
+    _ = prompt
+
+    # -----------------------------------------------------
+    # PROJECT VALIDATION
+    # -----------------------------------------------------
+
+    project = (
+        db.query(models.Project)
+        .filter(models.Project.id == data.project_id)
+        .first()
+    )
 
     if not project:
         raise HTTPException(
-            status_code=404,
-            detail="Project not found"
+            status_code=422,
+            detail="Project not found",
         )
+
+    # -----------------------------------------------------
+    # MOCK PARSER
+    # -----------------------------------------------------
 
     parsed = parse_quick_add(data.description)
 
+    # -----------------------------------------------------
+    # VALIDATE BEFORE DATABASE WRITE
+    # -----------------------------------------------------
+
+    try:
+        validated_task = schemas.TaskCreate(
+            title=parsed["title"],
+            priority=parsed["priority"],
+            due_date=parsed["due_date_hint"],
+            status="pending",
+            project_id=data.project_id,
+        )
+
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=exc.errors(),
+        )
+
+    # -----------------------------------------------------
+    # CREATE DATABASE ROW
+    # -----------------------------------------------------
+
     new_task = models.Task(
-        title=parsed["title"],
-        priority=parsed["priority"],
-        due_date=parsed["due_date"],
-        status="pending",
-        project_id=data.project_id
+        title=validated_task.title,
+        priority=validated_task.priority,
+        due_date=validated_task.due_date,
+        status=validated_task.status,
+        project_id=validated_task.project_id,
     )
 
     db.add(new_task)
@@ -291,209 +341,256 @@ def quick_add_task(
     return new_task
 
 
-# ==========================================
+# =========================================================
 # LIST TASKS
-# ==========================================
+# =========================================================
 
 @app.get(
     "/tasks",
-    response_model=list[schemas.TaskResponse]
+    response_model=list[schemas.TaskResponse],
 )
 def get_tasks(
     sort: str | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     tasks = db.query(models.Task).all()
 
-    # --------------------------------------
+    # -----------------------------------------------------
+    # NORMAL LIST
+    # -----------------------------------------------------
+
+    if sort is None:
+        return tasks
+
+    # -----------------------------------------------------
     # INSERTION SORT BY PRIORITY
-    # --------------------------------------
+    # -----------------------------------------------------
 
     if sort == "priority":
 
-        priority_order = {
-            "high": 1,
+        priority_rank = {
+            "low": 1,
             "medium": 2,
-            "low": 3
+            "high": 3,
         }
 
-        for i in range(1, len(tasks)):
-            key = tasks[i]
-            key_priority = priority_order.get(
-                key.priority,
-                2
-            )
+        records = [
+            {
+                "id": task.id,
+                "title": task.title,
+                "priority": task.priority,
+                "priority_rank": priority_rank.get(
+                    task.priority,
+                    2,
+                ),
+                "due_date": task.due_date,
+                "status": task.status,
+                "project_id": task.project_id,
+            }
+            for task in tasks
+        ]
 
-            j = i - 1
-
-            while j >= 0:
-                current_priority = priority_order.get(
-                    tasks[j].priority,
-                    2
-                )
-
-                if current_priority > key_priority:
-                    tasks[j + 1] = tasks[j]
-                    j -= 1
-                else:
-                    break
-
-            tasks[j + 1] = key
-
-    # --------------------------------------
-    # SORT BY DUE DATE
-    # --------------------------------------
-
-    elif sort == "due_date":
-
-        tasks.sort(
-            key=lambda task: (
-                task.due_date is None,
-                task.due_date or date.max
-            )
+        algorithms.insertion_sort(
+            records,
+            "priority_rank",
         )
 
-    return tasks
+        return [
+            {
+                "id": record["id"],
+                "title": record["title"],
+                "priority": record["priority"],
+                "due_date": record["due_date"],
+                "status": record["status"],
+                "project_id": record["project_id"],
+            }
+            for record in records
+        ]
+
+    # -----------------------------------------------------
+    # INSERTION SORT BY DUE DATE
+    # -----------------------------------------------------
+
+    if sort == "due_date":
+
+        records = [
+            {
+                "id": task.id,
+                "title": task.title,
+                "priority": task.priority,
+                "due_date": task.due_date or "",
+                "status": task.status,
+                "project_id": task.project_id,
+            }
+            for task in tasks
+        ]
+
+        algorithms.insertion_sort(
+            records,
+            "due_date",
+        )
+
+        return records
+
+    raise HTTPException(
+        status_code=400,
+        detail="sort must be 'priority' or 'due_date'",
+    )
 
 
-# ==========================================
+# =========================================================
 # SEARCH TASKS
-# ==========================================
+# =========================================================
 
-@app.get("/tasks/search")
+@app.get(
+    "/tasks/search",
+    response_model=schemas.TaskResponse,
+)
 def search_tasks(
     title: str,
-    algo: str = "linear",
-    db: Session = Depends(get_db)
+    algo: str = "binary",
+    db: Session = Depends(get_db),
 ):
     tasks = db.query(models.Task).all()
 
-    titles = [
-        task.title
+    records = [
+        {
+            "id": task.id,
+            "title": task.title,
+        }
         for task in tasks
     ]
 
+    # -----------------------------------------------------
+    # LINEAR SEARCH
+    # -----------------------------------------------------
+
     if algo == "linear":
 
-        index, comparisons = (
-            algorithms.linear_search_with_comparisons(
-                titles,
-                title
-            )
+        index = algorithms.linear_search(
+            records,
+            title,
+            "title",
         )
 
-        task = (
-            tasks[index]
-            if index != -1
-            else None
-        )
-
-        return {
-            "algorithm": "linear",
-            "target": title,
-            "found": index != -1,
-            "index": index,
-            "comparisons": comparisons,
-            "task": task
-        }
+    # -----------------------------------------------------
+    # BINARY SEARCH
+    # -----------------------------------------------------
 
     elif algo == "binary":
 
-        sorted_pairs = sorted(
-            enumerate(titles),
-            key=lambda item: item[1].lower()
+        algorithms.insertion_sort(
+            records,
+            "title",
         )
 
-        sorted_titles = [
-            title_value
-            for _, title_value in sorted_pairs
-        ]
-
-        index, comparisons = (
-            algorithms.binary_search_with_comparisons(
-                sorted_titles,
-                title
-            )
+        index = algorithms.binary_search(
+            records,
+            title,
+            "title",
         )
-
-        original_index = -1
-
-        if index != -1:
-            original_index = sorted_pairs[index][0]
-
-        task = (
-            tasks[original_index]
-            if original_index != -1
-            else None
-        )
-
-        return {
-            "algorithm": "binary",
-            "target": title,
-            "found": original_index != -1,
-            "index": original_index,
-            "comparisons": comparisons,
-            "task": task
-        }
 
     else:
         raise HTTPException(
             status_code=400,
-            detail="algo must be 'linear' or 'binary'"
+            detail="algo must be 'binary' or 'linear'",
         )
 
+    if index == -1:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found",
+        )
 
-# ==========================================
-# GET TASK
-# ==========================================
+    task_id = records[index]["id"]
 
-@app.get(
-    "/tasks/{task_id}",
-    response_model=schemas.TaskResponse
-)
-def get_task(
-    task_id: int,
-    db: Session = Depends(get_db)
-):
-    task = db.query(models.Task).filter(
-        models.Task.id == task_id
-    ).first()
+    task = (
+        db.query(models.Task)
+        .filter(models.Task.id == task_id)
+        .first()
+    )
 
     if not task:
         raise HTTPException(
             status_code=404,
-            detail="Task not found"
+            detail="Task not found",
         )
 
     return task
 
 
-# ==========================================
-# UPDATE TASK
-# ==========================================
+# =========================================================
+# GET TASK BY ID
+# =========================================================
 
-@app.put(
+@app.get(
     "/tasks/{task_id}",
-    response_model=schemas.TaskResponse
+    response_model=schemas.TaskResponse,
 )
-def update_task(
+def get_task(
     task_id: int,
-    task_data: schemas.TaskUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    task = db.query(models.Task).filter(
-        models.Task.id == task_id
-    ).first()
+    task = (
+        db.query(models.Task)
+        .filter(models.Task.id == task_id)
+        .first()
+    )
 
     if not task:
         raise HTTPException(
             status_code=404,
-            detail="Task not found"
+            detail="Task not found",
+        )
+
+    return task
+
+
+# =========================================================
+# UPDATE TASK
+# =========================================================
+
+@app.put(
+    "/tasks/{task_id}",
+    response_model=schemas.TaskResponse,
+)
+def update_task(
+    task_id: int,
+    task_data: schemas.TaskUpdate,
+    db: Session = Depends(get_db),
+):
+    task = (
+        db.query(models.Task)
+        .filter(models.Task.id == task_id)
+        .first()
+    )
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found",
         )
 
     update_data = task_data.model_dump(
         exclude_unset=True
     )
+
+    if "project_id" in update_data:
+
+        project = (
+            db.query(models.Project)
+            .filter(
+                models.Project.id
+                == update_data["project_id"]
+            )
+            .first()
+        )
+
+        if not project:
+            raise HTTPException(
+                status_code=404,
+                detail="Project not found",
+            )
 
     for key, value in update_data.items():
         setattr(task, key, value)
@@ -504,23 +601,25 @@ def update_task(
     return task
 
 
-# ==========================================
+# =========================================================
 # DELETE TASK
-# ==========================================
+# =========================================================
 
 @app.delete("/tasks/{task_id}")
 def delete_task(
     task_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    task = db.query(models.Task).filter(
-        models.Task.id == task_id
-    ).first()
+    task = (
+        db.query(models.Task)
+        .filter(models.Task.id == task_id)
+        .first()
+    )
 
     if not task:
         raise HTTPException(
             status_code=404,
-            detail="Task not found"
+            detail="Task not found",
         )
 
     db.delete(task)
@@ -531,32 +630,34 @@ def delete_task(
     }
 
 
-# ==========================================
-# CREATE USER
-# ==========================================
+# =========================================================
+# USERS - CREATE
+# =========================================================
 
 @app.post(
     "/users",
     response_model=schemas.UserResponse,
-    status_code=201
+    status_code=201,
 )
 def create_user(
     user: schemas.UserCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    existing_user = db.query(models.User).filter(
-        models.User.email == user.email
-    ).first()
+    existing_user = (
+        db.query(models.User)
+        .filter(models.User.email == user.email)
+        .first()
+    )
 
     if existing_user:
         raise HTTPException(
             status_code=422,
-            detail="Email already exists"
+            detail="Email already exists",
         )
 
     new_user = models.User(
         name=user.name,
-        email=user.email
+        email=user.email,
     )
 
     db.add(new_user)
@@ -566,52 +667,58 @@ def create_user(
     return new_user
 
 
-# ==========================================
-# LIST USERS
-# ==========================================
+# =========================================================
+# USERS - LIST
+# =========================================================
 
 @app.get(
     "/users",
-    response_model=list[schemas.UserResponse]
+    response_model=list[schemas.UserResponse],
 )
 def get_users(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     return db.query(models.User).all()
 
 
-# ==========================================
-# UPDATE USER
-# ==========================================
+# =========================================================
+# USERS - UPDATE
+# =========================================================
 
 @app.put(
     "/users/{user_id}",
-    response_model=schemas.UserResponse
+    response_model=schemas.UserResponse,
 )
 def update_user(
     user_id: int,
     user_data: schemas.UserCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    user = db.query(models.User).filter(
-        models.User.id == user_id
-    ).first()
+    user = (
+        db.query(models.User)
+        .filter(models.User.id == user_id)
+        .first()
+    )
 
     if not user:
         raise HTTPException(
             status_code=404,
-            detail="User not found"
+            detail="User not found",
         )
 
-    existing_user = db.query(models.User).filter(
-        models.User.email == user_data.email,
-        models.User.id != user_id
-    ).first()
+    duplicate = (
+        db.query(models.User)
+        .filter(
+            models.User.email == user_data.email,
+            models.User.id != user_id,
+        )
+        .first()
+    )
 
-    if existing_user:
+    if duplicate:
         raise HTTPException(
             status_code=422,
-            detail="Email already exists"
+            detail="Email already exists",
         )
 
     user.name = user_data.name
@@ -623,23 +730,25 @@ def update_user(
     return user
 
 
-# ==========================================
-# DELETE USER
-# ==========================================
+# =========================================================
+# USERS - DELETE
+# =========================================================
 
 @app.delete("/users/{user_id}")
 def delete_user(
     user_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    user = db.query(models.User).filter(
-        models.User.id == user_id
-    ).first()
+    user = (
+        db.query(models.User)
+        .filter(models.User.id == user_id)
+        .first()
+    )
 
     if not user:
         raise HTTPException(
             status_code=404,
-            detail="User not found"
+            detail="User not found",
         )
 
     db.delete(user)
@@ -650,32 +759,34 @@ def delete_user(
     }
 
 
-# ==========================================
-# CREATE PROJECT
-# ==========================================
+# =========================================================
+# PROJECTS - CREATE
+# =========================================================
 
 @app.post(
     "/projects",
     response_model=schemas.ProjectResponse,
-    status_code=201
+    status_code=201,
 )
 def create_project(
     project: schemas.ProjectCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    owner = db.query(models.User).filter(
-        models.User.id == project.owner_id
-    ).first()
+    owner = (
+        db.query(models.User)
+        .filter(models.User.id == project.owner_id)
+        .first()
+    )
 
     if not owner:
         raise HTTPException(
             status_code=404,
-            detail="User not found"
+            detail="User not found",
         )
 
     new_project = models.Project(
         name=project.name,
-        owner_id=project.owner_id
+        owner_id=project.owner_id,
     )
 
     db.add(new_project)
@@ -685,98 +796,124 @@ def create_project(
     return new_project
 
 
-# ==========================================
-# LIST PROJECTS
-# ==========================================
+# =========================================================
+# PROJECTS - LIST
+# =========================================================
 
 @app.get(
     "/projects",
-    response_model=list[schemas.ProjectResponse]
+    response_model=list[schemas.ProjectResponse],
 )
 def get_projects(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     return db.query(models.Project).all()
 
 
-# ==========================================
+# =========================================================
 # PROJECT STATISTICS
-# ==========================================
+# =========================================================
 
 @app.get("/projects/{project_id}/stats")
 def get_project_stats(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    project = db.query(models.Project).filter(
-        models.Project.id == project_id
-    ).first()
+    project = (
+        db.query(models.Project)
+        .filter(models.Project.id == project_id)
+        .first()
+    )
 
     if not project:
         raise HTTPException(
             status_code=404,
-            detail="Project not found"
+            detail="Project not found",
         )
 
-    stats = db.query(
-        models.Task.status,
-        func.count(models.Task.id)
-    ).filter(
-        models.Task.project_id == project_id
-    ).group_by(
-        models.Task.status
-    ).all()
+    rows = (
+        db.query(
+            models.Project.id.label("project_id"),
+            models.Task.status.label("status"),
+            func.count(models.Task.id).label(
+                "task_count"
+            ),
+        )
+        .outerjoin(
+            models.Task,
+            models.Task.project_id
+            == models.Project.id,
+        )
+        .filter(models.Project.id == project_id)
+        .group_by(
+            models.Project.id,
+            models.Task.status,
+        )
+        .all()
+    )
 
-    counts = {
-        "pending": 0,
-        "completed": 0
-    }
+    pending = 0
+    completed = 0
+    total = 0
 
-    for status, count in stats:
-        if status in counts:
-            counts[status] = count
+    for row in rows:
 
-    total = sum(counts.values())
+        count = int(row.task_count or 0)
+
+        total += count
+
+        if row.status == "pending":
+            pending += count
+
+        elif row.status == "completed":
+            completed += count
 
     return {
         "project_id": project_id,
         "total": total,
-        "pending": counts["pending"],
-        "completed": counts["completed"]
+        "pending": pending,
+        "completed": completed,
     }
 
 
-# ==========================================
-# UPDATE PROJECT
-# ==========================================
+# =========================================================
+# PROJECT UPDATE
+# =========================================================
 
 @app.put(
     "/projects/{project_id}",
-    response_model=schemas.ProjectResponse
+    response_model=schemas.ProjectResponse,
 )
 def update_project(
     project_id: int,
     project_data: schemas.ProjectCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    project = db.query(models.Project).filter(
-        models.Project.id == project_id
-    ).first()
+    project = (
+        db.query(models.Project)
+        .filter(models.Project.id == project_id)
+        .first()
+    )
 
     if not project:
         raise HTTPException(
             status_code=404,
-            detail="Project not found"
+            detail="Project not found",
         )
 
-    owner = db.query(models.User).filter(
-        models.User.id == project_data.owner_id
-    ).first()
+    owner = (
+        db.query(models.User)
+        .filter(
+            models.User.id
+            == project_data.owner_id
+        )
+        .first()
+    )
 
     if not owner:
         raise HTTPException(
             status_code=404,
-            detail="User not found"
+            detail="User not found",
         )
 
     project.name = project_data.name
@@ -788,23 +925,25 @@ def update_project(
     return project
 
 
-# ==========================================
-# DELETE PROJECT
-# ==========================================
+# =========================================================
+# PROJECT DELETE
+# =========================================================
 
 @app.delete("/projects/{project_id}")
 def delete_project(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    project = db.query(models.Project).filter(
-        models.Project.id == project_id
-    ).first()
+    project = (
+        db.query(models.Project)
+        .filter(models.Project.id == project_id)
+        .first()
+    )
 
     if not project:
         raise HTTPException(
             status_code=404,
-            detail="Project not found"
+            detail="Project not found",
         )
 
     db.delete(project)
@@ -815,138 +954,225 @@ def delete_project(
     }
 
 
-# ==========================================
-# ALGORITHMS - INSERTION SORT
-# ==========================================
+# =========================================================
+# ALGORITHM - INSERTION SORT
+# =========================================================
 
 @app.post("/algorithms/sort")
 def sort_numbers(numbers: list[int]):
+
+    records = [
+        {"value": number}
+        for number in numbers
+    ]
+
+    algorithms.insertion_sort(
+        records,
+        "value",
+    )
+
     return {
         "algorithm": "insertion_sort",
         "input": numbers,
-        "sorted": algorithms.insertion_sort(numbers)
+        "sorted": [
+            record["value"]
+            for record in records
+        ],
     }
 
 
-# ==========================================
-# LINEAR SEARCH
-# ==========================================
+# =========================================================
+# ALGORITHM - LINEAR SEARCH
+# =========================================================
 
 @app.get("/algorithms/linear-search")
 def search_linear(
     numbers: str,
-    target: int
+    target: int,
 ):
+
     try:
         number_list = [
             int(number.strip())
             for number in numbers.split(",")
+            if number.strip()
         ]
+
     except ValueError:
         raise HTTPException(
             status_code=422,
-            detail="numbers must contain comma-separated integers"
+            detail=(
+                "numbers must contain "
+                "comma-separated integers"
+            ),
         )
 
+    records = [
+        {"value": number}
+        for number in number_list
+    ]
+
     index = algorithms.linear_search(
-        number_list,
-        target
+        records,
+        target,
+        "value",
     )
 
     return {
         "algorithm": "linear_search",
         "numbers": number_list,
         "target": target,
-        "index": index
+        "index": index,
     }
 
 
-# ==========================================
-# BINARY SEARCH
-# ==========================================
+# =========================================================
+# ALGORITHM - BINARY SEARCH
+# =========================================================
 
 @app.get("/algorithms/binary-search")
 def search_binary(
     numbers: str,
-    target: int
+    target: int,
 ):
+
     try:
         number_list = [
             int(number.strip())
             for number in numbers.split(",")
+            if number.strip()
         ]
+
     except ValueError:
         raise HTTPException(
             status_code=422,
-            detail="numbers must contain comma-separated integers"
+            detail=(
+                "numbers must contain "
+                "comma-separated integers"
+            ),
         )
 
-    number_list = algorithms.insertion_sort(
-        number_list
+    records = [
+        {"value": number}
+        for number in number_list
+    ]
+
+    algorithms.insertion_sort(
+        records,
+        "value",
     )
 
     index = algorithms.binary_search(
-        number_list,
-        target
+        records,
+        target,
+        "value",
     )
 
     return {
         "algorithm": "binary_search",
-        "numbers": number_list,
+        "numbers": [
+            record["value"]
+            for record in records
+        ],
         "target": target,
-        "index": index
+        "index": index,
     }
 
 
-# ==========================================
-# ALGORITHM BENCHMARK
-# ==========================================
+# =========================================================
+# BENCHMARK REQUEST
+# =========================================================
 
 class BenchmarkRequest(BaseModel):
     numbers: list[int]
     target: int
 
 
+# =========================================================
+# ALGORITHM BENCHMARK
+# =========================================================
+
 @app.post("/algorithms/benchmark")
 def benchmark_algorithms(
-    data: BenchmarkRequest
+    data: BenchmarkRequest,
 ):
-    numbers = data.numbers
-    target = data.target
 
-    sorted_numbers, sort_comparisons = (
-        algorithms.insertion_sort_with_comparisons(
-            numbers
+    original_numbers = list(data.numbers)
+
+    # -----------------------------------------------------
+    # INSERTION SORT COUNT
+    # -----------------------------------------------------
+
+    sort_records = [
+        {"value": number}
+        for number in original_numbers
+    ]
+
+    sort_comparisons = (
+        algorithms.insertion_sort_count(
+            sort_records,
+            "value",
         )
     )
 
-    linear_index, linear_comparisons = (
-        algorithms.linear_search_with_comparisons(
-            numbers,
-            target
+    sorted_numbers = [
+        record["value"]
+        for record in sort_records
+    ]
+
+    # -----------------------------------------------------
+    # LINEAR SEARCH COUNT
+    # -----------------------------------------------------
+
+    linear_records = [
+        {"value": number}
+        for number in original_numbers
+    ]
+
+    linear_result = (
+        algorithms.linear_search_count(
+            linear_records,
+            data.target,
+            "value",
         )
     )
 
-    binary_index, binary_comparisons = (
-        algorithms.binary_search_with_comparisons(
-            sorted_numbers,
-            target
+    # -----------------------------------------------------
+    # BINARY SEARCH COUNT
+    # -----------------------------------------------------
+
+    binary_result = (
+        algorithms.binary_search_count(
+            sort_records,
+            data.target,
+            "value",
         )
     )
+
+    # -----------------------------------------------------
+    # FINAL RESPONSE
+    # -----------------------------------------------------
 
     return {
-        "input": numbers,
-        "target": target,
+        "input": original_numbers,
+        "target": data.target,
         "sorted_numbers": sorted_numbers,
+
         "insertion_sort": {
-            "comparisons": sort_comparisons
+            "comparisons": sort_comparisons,
         },
+
         "linear_search": {
-            "index": linear_index,
-            "comparisons": linear_comparisons
+            "index": linear_result["index"],
+            "comparisons": linear_result[
+                "comparison_count"
+            ],
         },
+
         "binary_search": {
-            "index": binary_index,
-            "comparisons": binary_comparisons
-        }
+            "index": binary_result["index"],
+            "comparisons": binary_result[
+                "comparison_count"
+            ],
+        },
     }
