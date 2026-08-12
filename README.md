@@ -295,3 +295,26 @@ Expected structured task:
 ## 📄 License
 
 This project was created as a full-stack software engineering project for educational and demonstration purposes.
+
+## Algorithm Benchmark Results
+
+The benchmark was run with 10, 500, and 3000 records.
+
+| Records | Insertion Sort | Linear Search | Binary Search |
+|--------:|---------------:|--------------:|--------------:|
+| 10 | 9 | 10 | 4 |
+| 500 | 499 | 500 | 9 |
+| 3000 | 2999 | 3000 | 12 |
+
+The results show that linear search grows directly with the number of records,
+while binary search requires far fewer comparisons after sorting. Insertion
+sort is more expensive as the dataset grows, but TaskFlow users are expected
+to sort their task list repeatedly while adding or renaming tasks less often.
+Therefore, paying the sorting cost can be worthwhile when the sorted data is
+searched repeatedly.
+
+## Algorithm Verification
+
+The automated algorithm verification script completed successfully with
+13/13 checks passed, covering insertion sort, binary search, linear search,
+and their comparison-counting wrappers.
