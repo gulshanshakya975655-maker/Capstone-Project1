@@ -312,3 +312,9 @@ sort is more expensive as the dataset grows, but TaskFlow users are expected
 to sort their task list repeatedly while adding or renaming tasks less often.
 Therefore, paying the sorting cost can be worthwhile when the sorted data is
 searched repeatedly.
+
+## Algorithm Verification
+
+The automated algorithm verification script completed successfully with
+13/13 checks passed, covering insertion sort, binary search, linear search,
+and their comparison-counting wrappers.
