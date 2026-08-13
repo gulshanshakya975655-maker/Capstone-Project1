@@ -1,3 +1,4 @@
+
 import time
 import re
 
@@ -84,7 +85,9 @@ app.add_middleware(
 
 @app.get("/")
 def home():
-    return {"message": "TaskFlow API is running!"}
+    return {
+        "message": "TaskFlow API is running!"
+    }
 
 
 # =========================================================
@@ -139,9 +142,11 @@ class QuickAddRequest(BaseModel):
     @classmethod
     def validate_description(cls, value):
         if not value or not value.strip():
-            raise ValueError("description cannot be blank")
+            raise ValueError(
+                "description cannot be blank"
+            )
 
-        return value
+        return value.strip()
 
 
 # =========================================================
@@ -240,7 +245,7 @@ def parse_quick_add(description: str):
             flags=re.IGNORECASE,
         )
 
-    # Remove ALL occurrences of matched date phrase
+    # Remove matched date phrase
     if due_date_hint:
         title = re.sub(
             r"\b" + re.escape(due_date_hint) + r"\b",
@@ -249,7 +254,26 @@ def parse_quick_add(description: str):
             flags=re.IGNORECASE,
         )
 
-    title = title.strip()
+    # -----------------------------------------------------
+    # CLEAN TITLE
+    # -----------------------------------------------------
+
+    # Remove extra spaces
+    title = re.sub(
+        r"\s+",
+        " ",
+        title,
+    ).strip()
+
+    # Remove spaces before punctuation
+    title = re.sub(
+        r"\s+([,.;!?])",
+        r"\1",
+        title,
+    )
+
+    # Remove unwanted punctuation from beginning/end
+    title = title.strip(" ,.")
 
     if not title:
         title = "Untitled task"
@@ -274,11 +298,12 @@ def quick_add_task(
     data: QuickAddRequest,
     db: Session = Depends(get_db),
 ):
-    # Build standard system/user prompt structure
-    prompt = build_quick_add_prompt(data.description)
+    # Build standard prompt structure
+    prompt = build_quick_add_prompt(
+        data.description
+    )
 
-    # Prevent unused-variable warnings while keeping
-    # the prompt structure available for future LLM support.
+    # Reserved for future LLM integration
     _ = prompt
 
     # -----------------------------------------------------
@@ -287,7 +312,9 @@ def quick_add_task(
 
     project = (
         db.query(models.Project)
-        .filter(models.Project.id == data.project_id)
+        .filter(
+            models.Project.id == data.project_id
+        )
         .first()
     )
 
@@ -301,7 +328,9 @@ def quick_add_task(
     # MOCK PARSER
     # -----------------------------------------------------
 
-    parsed = parse_quick_add(data.description)
+    parsed = parse_quick_add(
+        data.description
+    )
 
     # -----------------------------------------------------
     # VALIDATE BEFORE DATABASE WRITE
@@ -442,16 +471,23 @@ def get_tasks(
 # SEARCH TASKS
 # =========================================================
 
-@app.get(
-    "/tasks/search",
-    response_model=schemas.TaskResponse,
-)
+@app.get("/tasks/search")
 def search_tasks(
     title: str,
     algo: str = "binary",
     db: Session = Depends(get_db),
 ):
     tasks = db.query(models.Task).all()
+
+    if not tasks:
+        return {
+            "algorithm": algo,
+            "query": title,
+            "found": False,
+            "index": -1,
+            "comparison_count": 0,
+            "task": None,
+        }
 
     records = [
         {
@@ -467,7 +503,7 @@ def search_tasks(
 
     if algo == "linear":
 
-        index = algorithms.linear_search(
+        result = algorithms.linear_search_count(
             records,
             title,
             "title",
@@ -484,7 +520,7 @@ def search_tasks(
             "title",
         )
 
-        index = algorithms.binary_search(
+        result = algorithms.binary_search_count(
             records,
             title,
             "title",
@@ -496,11 +532,26 @@ def search_tasks(
             detail="algo must be 'binary' or 'linear'",
         )
 
+    index = result["index"]
+    comparison_count = result["comparison_count"]
+
+    # -----------------------------------------------------
+    # NOT FOUND
+    # -----------------------------------------------------
+
     if index == -1:
-        raise HTTPException(
-            status_code=404,
-            detail="Task not found",
-        )
+        return {
+            "algorithm": algo,
+            "query": title,
+            "found": False,
+            "index": -1,
+            "comparison_count": comparison_count,
+            "task": None,
+        }
+
+    # -----------------------------------------------------
+    # FOUND
+    # -----------------------------------------------------
 
     task_id = records[index]["id"]
 
@@ -511,16 +562,27 @@ def search_tasks(
     )
 
     if not task:
-        raise HTTPException(
-            status_code=404,
-            detail="Task not found",
-        )
+        return {
+            "algorithm": algo,
+            "query": title,
+            "found": False,
+            "index": -1,
+            "comparison_count": comparison_count,
+            "task": None,
+        }
 
-    return task
+    return {
+        "algorithm": algo,
+        "query": title,
+        "found": True,
+        "index": index,
+        "comparison_count": comparison_count,
+        "task": task,
+    }
 
 
 # =========================================================
-# GET TASK BY ID
+# GET SINGLE TASK
 # =========================================================
 
 @app.get(
@@ -645,7 +707,9 @@ def create_user(
 ):
     existing_user = (
         db.query(models.User)
-        .filter(models.User.email == user.email)
+        .filter(
+            models.User.email == user.email
+        )
         .first()
     )
 
@@ -774,7 +838,9 @@ def create_project(
 ):
     owner = (
         db.query(models.User)
-        .filter(models.User.id == project.owner_id)
+        .filter(
+            models.User.id == project.owner_id
+        )
         .first()
     )
 
@@ -821,7 +887,9 @@ def get_project_stats(
 ):
     project = (
         db.query(models.Project)
-        .filter(models.Project.id == project_id)
+        .filter(
+            models.Project.id == project_id
+        )
         .first()
     )
 
@@ -833,18 +901,24 @@ def get_project_stats(
 
     rows = (
         db.query(
-            models.Project.id.label("project_id"),
-            models.Task.status.label("status"),
-            func.count(models.Task.id).label(
-                "task_count"
+            models.Project.id.label(
+                "project_id"
             ),
+            models.Task.status.label(
+                "status"
+            ),
+            func.count(
+                models.Task.id
+            ).label("task_count"),
         )
         .outerjoin(
             models.Task,
             models.Task.project_id
             == models.Project.id,
         )
-        .filter(models.Project.id == project_id)
+        .filter(
+            models.Project.id == project_id
+        )
         .group_by(
             models.Project.id,
             models.Task.status,
@@ -858,7 +932,9 @@ def get_project_stats(
 
     for row in rows:
 
-        count = int(row.task_count or 0)
+        count = int(
+            row.task_count or 0
+        )
 
         total += count
 
@@ -891,7 +967,9 @@ def update_project(
 ):
     project = (
         db.query(models.Project)
-        .filter(models.Project.id == project_id)
+        .filter(
+            models.Project.id == project_id
+        )
         .first()
     )
 
@@ -936,7 +1014,9 @@ def delete_project(
 ):
     project = (
         db.query(models.Project)
-        .filter(models.Project.id == project_id)
+        .filter(
+            models.Project.id == project_id
+        )
         .first()
     )
 
@@ -959,7 +1039,9 @@ def delete_project(
 # =========================================================
 
 @app.post("/algorithms/sort")
-def sort_numbers(numbers: list[int]):
+def sort_numbers(
+    numbers: list[int],
+):
 
     records = [
         {"value": number}
@@ -1097,7 +1179,9 @@ def benchmark_algorithms(
     data: BenchmarkRequest,
 ):
 
-    original_numbers = list(data.numbers)
+    original_numbers = list(
+        data.numbers
+    )
 
     # -----------------------------------------------------
     # INSERTION SORT COUNT

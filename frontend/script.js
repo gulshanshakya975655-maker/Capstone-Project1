@@ -1,6 +1,5 @@
 const API_URL = "http://127.0.0.1:8000";
 
-
 // ==========================================
 // ELEMENTS
 // ==========================================
@@ -32,6 +31,9 @@ const projectName = document.getElementById("projectName");
 const projectOwnerId = document.getElementById("projectOwnerId");
 const projectsContainer = document.getElementById("projects");
 
+const quickAddForm = document.getElementById("quickAddForm");
+const quickAddInput = document.getElementById("quickAddInput");
+const quickAddResult = document.getElementById("quickAddResult");
 
 let tasks = [];
 let users = [];
@@ -39,10 +41,94 @@ let projects = [];
 
 
 // ==========================================
+// LOCAL STORAGE
+// ==========================================
+
+const TASK_CACHE_KEY = "taskflow_tasks_cache";
+const USER_CACHE_KEY = "taskflow_users_cache";
+const PROJECT_CACHE_KEY = "taskflow_projects_cache";
+
+function saveCache(key, data) {
+    try {
+        localStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+        console.error("Cache save error:", error);
+    }
+}
+
+function loadCache(key) {
+    try {
+        const cached = localStorage.getItem(key);
+
+        if (!cached) {
+            return null;
+        }
+
+        return JSON.parse(cached);
+    } catch (error) {
+        console.error("Cache load error:", error);
+        return null;
+    }
+}
+
+
+// ==========================================
+// INLINE ERROR HELPERS
+// ==========================================
+
+function showFieldError(input, message) {
+    input.classList.add("input-error");
+
+    let errorElement = input.parentElement.querySelector(".field-error");
+
+    if (!errorElement) {
+        errorElement = document.createElement("div");
+        errorElement.className = "field-error";
+        input.parentElement.insertBefore(errorElement, input.nextSibling);
+    }
+
+    errorElement.textContent = message;
+    errorElement.classList.add("show");
+}
+
+function clearFieldError(input) {
+    input.classList.remove("input-error");
+
+    const errorElement = input.parentElement.querySelector(".field-error");
+
+    if (errorElement) {
+        errorElement.textContent = "";
+        errorElement.classList.remove("show");
+    }
+}
+
+function showSuccess(container, message) {
+    if (!container) {
+        return;
+    }
+
+    container.textContent = message;
+    container.className = "success-message";
+
+    setTimeout(function () {
+        container.textContent = "";
+        container.className = "";
+    }, 2500);
+}
+
+
+// ==========================================
 // LOAD TASKS
 // ==========================================
 
 async function loadTasks() {
+
+    const cachedTasks = loadCache(TASK_CACHE_KEY);
+
+    if (Array.isArray(cachedTasks)) {
+        tasks = cachedTasks;
+        renderTasks();
+    }
 
     try {
 
@@ -54,13 +140,17 @@ async function loadTasks() {
 
         tasks = await response.json();
 
+        saveCache(TASK_CACHE_KEY, tasks);
+
         renderTasks();
 
     } catch (error) {
 
         console.error("Error loading tasks:", error);
 
-        tasksContainer.textContent = "Unable to load tasks.";
+        if (!cachedTasks) {
+            tasksContainer.textContent = "Unable to load tasks.";
+        }
     }
 }
 
@@ -71,18 +161,24 @@ async function loadTasks() {
 
 function renderTasks() {
 
-    const searchText = searchInput.value
-        .trim()
-        .toLowerCase();
+    const searchText = searchInput
+        ? searchInput.value.trim().toLowerCase()
+        : "";
 
-    const selectedPriority = priorityFilter.value;
-    const selectedStatus = statusFilter.value;
+    const selectedPriority = priorityFilter
+        ? priorityFilter.value
+        : "all";
 
+    const selectedStatus = statusFilter
+        ? statusFilter.value
+        : "all";
 
     const filteredTasks = tasks.filter(function (task) {
 
+        const taskTitle = String(task.title || "").toLowerCase();
+
         const matchesSearch =
-            task.title.toLowerCase().includes(searchText);
+            taskTitle.includes(searchText);
 
         const matchesPriority =
             selectedPriority === "all" ||
@@ -99,14 +195,11 @@ function renderTasks() {
         );
     });
 
-
     tasksContainer.textContent = "";
-
 
     if (filteredTasks.length === 0) {
 
         const message = document.createElement("p");
-
         message.textContent = "No tasks found.";
 
         tasksContainer.appendChild(message);
@@ -115,105 +208,57 @@ function renderTasks() {
 
         filteredTasks.forEach(function (task) {
 
-            const taskItem =
-                document.createElement("div");
-
+            const taskItem = document.createElement("div");
             taskItem.className = "task-item";
 
-
-            const title =
-                document.createElement("h3");
-
+            const title = document.createElement("h3");
             title.textContent = task.title;
 
-
-            const priority =
-                document.createElement("p");
-
+            const priority = document.createElement("p");
             priority.textContent =
                 `Priority: ${task.priority}`;
 
-
-            const dueDate =
-                document.createElement("p");
-
+            const dueDate = document.createElement("p");
             dueDate.textContent =
                 `Due Date: ${task.due_date || "Not set"}`;
 
-
-            const status =
-                document.createElement("p");
-
+            const status = document.createElement("p");
             status.textContent =
                 `Status: ${task.status}`;
 
-
-            const actions =
-                document.createElement("div");
-
+            const actions = document.createElement("div");
             actions.className = "task-actions";
 
-
-            // EDIT
-            const editButton =
-                document.createElement("button");
-
+            const editButton = document.createElement("button");
             editButton.textContent = "Edit";
-
             editButton.className = "edit-btn";
 
-            editButton.addEventListener(
-                "click",
-                function () {
-                    editTask(task.id);
-                }
-            );
+            editButton.addEventListener("click", function () {
+                editTask(task.id);
+            });
 
-
-            // COMPLETE
-            const completeButton =
-                document.createElement("button");
+            const completeButton = document.createElement("button");
 
             completeButton.textContent =
                 task.status === "completed"
                     ? "Mark Pending"
                     : "Complete";
 
-            completeButton.className =
-                "complete-btn";
+            completeButton.addEventListener("click", function () {
+                updateTaskStatus(task.id, task.status);
+            });
 
-            completeButton.addEventListener(
-                "click",
-                function () {
-                    updateTaskStatus(
-                        task.id,
-                        task.status
-                    );
-                }
-            );
-
-
-            // DELETE
-            const deleteButton =
-                document.createElement("button");
-
+            const deleteButton = document.createElement("button");
             deleteButton.textContent = "Delete";
+            deleteButton.className = "delete-btn";
 
-            deleteButton.className =
-                "delete-btn";
-
-            deleteButton.addEventListener(
-                "click",
-                function () {
-                    deleteTask(task.id);
-                }
-            );
-
+            deleteButton.addEventListener("click", function () {
+                deleteTask(task.id);
+            });
 
             actions.appendChild(editButton);
             actions.appendChild(completeButton);
             actions.appendChild(deleteButton);
-
 
             taskItem.appendChild(title);
             taskItem.appendChild(priority);
@@ -221,11 +266,9 @@ function renderTasks() {
             taskItem.appendChild(status);
             taskItem.appendChild(actions);
 
-
             tasksContainer.appendChild(taskItem);
         });
     }
-
 
     updateSummary();
 }
@@ -239,21 +282,17 @@ function updateSummary() {
 
     const total = tasks.length;
 
-    const pending =
-        tasks.filter(function (task) {
-            return task.status === "pending";
-        }).length;
+    const pending = tasks.filter(function (task) {
+        return task.status === "pending";
+    }).length;
 
-    const completed =
-        tasks.filter(function (task) {
-            return task.status === "completed";
-        }).length;
+    const completed = tasks.filter(function (task) {
+        return task.status === "completed";
+    }).length;
 
-    const highPriority =
-        tasks.filter(function (task) {
-            return task.priority === "high";
-        }).length;
-
+    const highPriority = tasks.filter(function (task) {
+        return task.priority === "high";
+    }).length;
 
     totalTasks.textContent = total;
     pendingTasks.textContent = pending;
@@ -268,23 +307,20 @@ function updateSummary() {
 
 async function createTask() {
 
-    const title =
-        titleInput.value.trim();
+    const title = titleInput.value.trim();
+    const priority = priorityInput.value;
+    const dueDate = dueDateInput.value;
 
-    const priority =
-        priorityInput.value;
-
-    const dueDate =
-        dueDateInput.value;
-
+    clearFieldError(titleInput);
 
     if (!title) {
-
-        alert("Please enter a task title.");
-
+        showFieldError(
+            titleInput,
+            "Task title is required."
+        );
+        titleInput.focus();
         return;
     }
-
 
     try {
 
@@ -292,66 +328,49 @@ async function createTask() {
             `${API_URL}/tasks`,
             {
                 method: "POST",
-
                 headers: {
                     "Content-Type": "application/json"
                 },
-
                 body: JSON.stringify({
-
                     title: title,
-
                     priority: priority,
-
                     due_date: dueDate || null,
-
                     status: "pending",
-
                     project_id: 1
                 })
             }
         );
 
+        const data = await response.json();
 
         if (!response.ok) {
 
-            const errorData =
-                await response.json();
-
-            alert(
-                errorData.detail ||
-                "Failed to create task."
+            showFieldError(
+                titleInput,
+                data.detail || "Failed to create task."
             );
 
             return;
         }
 
+        tasks.push(data);
 
-        const newTask =
-            await response.json();
-
-
-        tasks.push(newTask);
-
+        saveCache(TASK_CACHE_KEY, tasks);
 
         titleInput.value = "";
-
         priorityInput.value = "medium";
-
         dueDateInput.value = "";
 
+        clearFieldError(titleInput);
 
         renderTasks();
 
-
     } catch (error) {
 
-        console.error(
-            "Error creating task:",
-            error
-        );
+        console.error("Error creating task:", error);
 
-        alert(
+        showFieldError(
+            titleInput,
             "Backend server is not reachable."
         );
     }
@@ -364,42 +383,28 @@ async function createTask() {
 
 async function editTask(taskId) {
 
-    const task =
-        tasks.find(function (item) {
-            return item.id === taskId;
-        });
-
+    const task = tasks.find(function (item) {
+        return item.id === taskId;
+    });
 
     if (!task) {
         return;
     }
 
-
-    const newTitle =
-        prompt(
-            "Enter new task title:",
-            task.title
-        );
-
+    const newTitle = prompt(
+        "Enter new task title:",
+        task.title
+    );
 
     if (newTitle === null) {
         return;
     }
 
-
-    const trimmedTitle =
-        newTitle.trim();
-
+    const trimmedTitle = newTitle.trim();
 
     if (!trimmedTitle) {
-
-        alert(
-            "Task title cannot be empty."
-        );
-
         return;
     }
-
 
     try {
 
@@ -407,52 +412,36 @@ async function editTask(taskId) {
             `${API_URL}/tasks/${taskId}`,
             {
                 method: "PUT",
-
                 headers: {
                     "Content-Type": "application/json"
                 },
-
                 body: JSON.stringify({
                     title: trimmedTitle
                 })
             }
         );
 
-
         if (!response.ok) {
-
-            alert(
-                "Failed to update task."
-            );
-
             return;
         }
 
+        const updatedTask = await response.json();
 
-        const updatedTask =
-            await response.json();
+        tasks = tasks.map(function (item) {
 
+            if (item.id === taskId) {
+                return updatedTask;
+            }
 
-        tasks =
-            tasks.map(function (item) {
+            return item;
+        });
 
-                if (item.id === taskId) {
-                    return updatedTask;
-                }
-
-                return item;
-            });
-
+        saveCache(TASK_CACHE_KEY, tasks);
 
         renderTasks();
 
-
     } catch (error) {
-
-        console.error(
-            "Error updating task:",
-            error
-        );
+        console.error("Error updating task:", error);
     }
 }
 
@@ -461,16 +450,12 @@ async function editTask(taskId) {
 // UPDATE TASK STATUS
 // ==========================================
 
-async function updateTaskStatus(
-    taskId,
-    currentStatus
-) {
+async function updateTaskStatus(taskId, currentStatus) {
 
     const newStatus =
         currentStatus === "completed"
             ? "pending"
             : "completed";
-
 
     try {
 
@@ -478,60 +463,36 @@ async function updateTaskStatus(
             `${API_URL}/tasks/${taskId}`,
             {
                 method: "PUT",
-
                 headers: {
                     "Content-Type": "application/json"
                 },
-
                 body: JSON.stringify({
                     status: newStatus
                 })
             }
         );
 
-
         if (!response.ok) {
-
-            const errorData =
-                await response.json();
-
-            alert(
-                errorData.detail ||
-                "Failed to update task status."
-            );
-
             return;
         }
 
+        const updatedTask = await response.json();
 
-        const updatedTask =
-            await response.json();
+        tasks = tasks.map(function (task) {
 
+            if (task.id === taskId) {
+                return updatedTask;
+            }
 
-        tasks =
-            tasks.map(function (task) {
+            return task;
+        });
 
-                if (task.id === taskId) {
-                    return updatedTask;
-                }
-
-                return task;
-            });
-
+        saveCache(TASK_CACHE_KEY, tasks);
 
         renderTasks();
 
-
     } catch (error) {
-
-        console.error(
-            "Error updating task status:",
-            error
-        );
-
-        alert(
-            "Unable to update task status."
-        );
+        console.error("Error updating task:", error);
     }
 }
 
@@ -542,16 +503,13 @@ async function updateTaskStatus(
 
 async function deleteTask(taskId) {
 
-    const confirmed =
-        confirm(
-            "Are you sure you want to delete this task?"
-        );
-
+    const confirmed = confirm(
+        "Are you sure you want to delete this task?"
+    );
 
     if (!confirmed) {
         return;
     }
-
 
     try {
 
@@ -562,32 +520,20 @@ async function deleteTask(taskId) {
             }
         );
 
-
         if (!response.ok) {
-
-            alert(
-                "Failed to delete task."
-            );
-
             return;
         }
 
+        tasks = tasks.filter(function (task) {
+            return task.id !== taskId;
+        });
 
-        tasks =
-            tasks.filter(function (task) {
-                return task.id !== taskId;
-            });
-
+        saveCache(TASK_CACHE_KEY, tasks);
 
         renderTasks();
 
-
     } catch (error) {
-
-        console.error(
-            "Error deleting task:",
-            error
-        );
+        console.error("Error deleting task:", error);
     }
 }
 
@@ -598,33 +544,35 @@ async function deleteTask(taskId) {
 
 async function loadUsers() {
 
+    const cachedUsers = loadCache(USER_CACHE_KEY);
+
+    if (Array.isArray(cachedUsers)) {
+        users = cachedUsers;
+        renderUsers();
+    }
+
     try {
 
-        const response =
-            await fetch(`${API_URL}/users`);
-
+        const response = await fetch(`${API_URL}/users`);
 
         if (!response.ok) {
             throw new Error("Failed to load users");
         }
 
+        users = await response.json();
 
-        users =
-            await response.json();
-
+        saveCache(USER_CACHE_KEY, users);
 
         renderUsers();
 
-
     } catch (error) {
 
-        console.error(
-            "Error loading users:",
-            error
-        );
+        console.error("Error loading users:", error);
 
-        usersContainer.textContent =
-            "Unable to load users.";
+        if (!cachedUsers) {
+            usersContainer.textContent =
+                "Unable to load users.";
+        }
     }
 }
 
@@ -637,108 +585,158 @@ function renderUsers() {
 
     usersContainer.textContent = "";
 
-
     if (users.length === 0) {
 
-        const message =
-            document.createElement("p");
-
-        message.textContent =
-            "No users found.";
+        const message = document.createElement("p");
+        message.textContent = "No users found.";
 
         usersContainer.appendChild(message);
 
         return;
     }
 
-
     users.forEach(function (user) {
 
-        const userItem =
-            document.createElement("div");
+        const userItem = document.createElement("div");
+        userItem.className = "task-item";
 
-        userItem.className =
-            "task-item";
+        const name = document.createElement("h3");
+        name.textContent = user.name;
 
+        const email = document.createElement("p");
+        email.textContent = `Email: ${user.email}`;
 
-        const name =
-            document.createElement("h3");
+        const id = document.createElement("p");
+        id.textContent = `User ID: ${user.id}`;
 
-        name.textContent =
-            user.name;
+        const actions = document.createElement("div");
+        actions.className = "task-actions";
 
+        const editButton = document.createElement("button");
+        editButton.textContent = "Edit";
+        editButton.className = "edit-btn";
 
-        const email =
-            document.createElement("p");
+        editButton.addEventListener("click", function () {
+            editUser(user.id);
+        });
 
-        email.textContent =
-            `Email: ${user.email}`;
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.className = "delete-btn";
 
-
-        const id =
-            document.createElement("p");
-
-        id.textContent =
-            `User ID: ${user.id}`;
-
-
-        // ACTIONS
-        const actions =
-            document.createElement("div");
-
-        actions.className =
-            "task-actions";
-
-
-        // EDIT USER
-        const editButton =
-            document.createElement("button");
-
-        editButton.textContent =
-            "Edit";
-
-        editButton.className =
-            "edit-btn";
-
-        editButton.addEventListener(
-            "click",
-            function () {
-                editUser(user.id);
-            }
-        );
-
-
-        // DELETE USER
-        const deleteButton =
-            document.createElement("button");
-
-        deleteButton.textContent =
-            "Delete";
-
-        deleteButton.className =
-            "delete-btn";
-
-        deleteButton.addEventListener(
-            "click",
-            function () {
-                deleteUser(user.id);
-            }
-        );
-
+        deleteButton.addEventListener("click", function () {
+            deleteUser(user.id);
+        });
 
         actions.appendChild(editButton);
         actions.appendChild(deleteButton);
-
 
         userItem.appendChild(name);
         userItem.appendChild(email);
         userItem.appendChild(id);
         userItem.appendChild(actions);
 
-
         usersContainer.appendChild(userItem);
     });
 }
+
+
+// ==========================================
+// CREATE USER
+// ==========================================
+
+async function createUser(event) {
+
+    event.preventDefault();
+
+    const name = userName.value.trim();
+    const email = userEmail.value.trim();
+
+    clearFieldError(userName);
+    clearFieldError(userEmail);
+
+    if (!name) {
+
+        showFieldError(
+            userName,
+            "User name is required."
+        );
+
+        userName.focus();
+        return;
+    }
+
+    if (!email) {
+
+        showFieldError(
+            userEmail,
+            "User email is required."
+        );
+
+        userEmail.focus();
+        return;
+    }
+
+    if (!userEmail.checkValidity()) {
+
+        showFieldError(
+            userEmail,
+            "Please enter a valid email address."
+        );
+
+        userEmail.focus();
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `${API_URL}/users`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+            showFieldError(
+                userEmail,
+                data.detail || "Failed to create user."
+            );
+
+            return;
+        }
+
+        users.push(data);
+
+        saveCache(USER_CACHE_KEY, users);
+
+        userName.value = "";
+        userEmail.value = "";
+
+        renderUsers();
+
+    } catch (error) {
+
+        console.error("Error creating user:", error);
+
+        showFieldError(
+            userEmail,
+            "Backend server is not reachable."
+        );
+    }
+}
+
+
 // ==========================================
 // EDIT USER
 // ==========================================
@@ -775,7 +773,6 @@ async function editUser(userId) {
     const email = newEmail.trim();
 
     if (!name || !email) {
-        alert("Name and email cannot be empty.");
         return;
     }
 
@@ -785,11 +782,9 @@ async function editUser(userId) {
             `${API_URL}/users/${userId}`,
             {
                 method: "PUT",
-
                 headers: {
                     "Content-Type": "application/json"
                 },
-
                 body: JSON.stringify({
                     name: name,
                     email: email
@@ -798,20 +793,10 @@ async function editUser(userId) {
         );
 
         if (!response.ok) {
-
-            const errorData =
-                await response.json();
-
-            alert(
-                errorData.detail ||
-                "Failed to update user."
-            );
-
             return;
         }
 
-        const updatedUser =
-            await response.json();
+        const updatedUser = await response.json();
 
         users = users.map(function (item) {
 
@@ -822,18 +807,12 @@ async function editUser(userId) {
             return item;
         });
 
+        saveCache(USER_CACHE_KEY, users);
+
         renderUsers();
 
     } catch (error) {
-
-        console.error(
-            "Error updating user:",
-            error
-        );
-
-        alert(
-            "Unable to update user."
-        );
+        console.error("Error updating user:", error);
     }
 }
 
@@ -862,15 +841,6 @@ async function deleteUser(userId) {
         );
 
         if (!response.ok) {
-
-            const errorData =
-                await response.json();
-
-            alert(
-                errorData.detail ||
-                "Failed to delete user."
-            );
-
             return;
         }
 
@@ -878,106 +848,12 @@ async function deleteUser(userId) {
             return user.id !== userId;
         });
 
-        renderUsers();
-
-    } catch (error) {
-
-        console.error(
-            "Error deleting user:",
-            error
-        );
-
-        alert(
-            "Unable to delete user."
-        );
-    }
-}
-
-// ==========================================
-// CREATE USER
-// ==========================================
-
-async function createUser(event) {
-
-    event.preventDefault();
-
-
-    const name =
-        userName.value.trim();
-
-    const email =
-        userEmail.value.trim();
-
-
-    if (!name || !email) {
-
-        alert(
-            "Please enter name and email."
-        );
-
-        return;
-    }
-
-
-    try {
-
-        const response =
-            await fetch(
-                `${API_URL}/users`,
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        name: name,
-                        email: email
-                    })
-                }
-            );
-
-
-        if (!response.ok) {
-
-            const errorData =
-                await response.json();
-
-            alert(
-                errorData.detail ||
-                "Failed to create user."
-            );
-
-            return;
-        }
-
-
-        const newUser =
-            await response.json();
-
-
-        users.push(newUser);
-
-
-        userName.value = "";
-
-        userEmail.value = "";
-
+        saveCache(USER_CACHE_KEY, users);
 
         renderUsers();
 
-
     } catch (error) {
-
-        console.error(
-            "Error creating user:",
-            error
-        );
-
-        alert(
-            "Backend server is not reachable."
-        );
+        console.error("Error deleting user:", error);
     }
 }
 
@@ -988,37 +864,37 @@ async function createUser(event) {
 
 async function loadProjects() {
 
+    const cachedProjects = loadCache(PROJECT_CACHE_KEY);
+
+    if (Array.isArray(cachedProjects)) {
+        projects = cachedProjects;
+        renderProjects();
+    }
+
     try {
 
-        const response =
-            await fetch(
-                `${API_URL}/projects`
-            );
-
+        const response = await fetch(
+            `${API_URL}/projects`
+        );
 
         if (!response.ok) {
-            throw new Error(
-                "Failed to load projects"
-            );
+            throw new Error("Failed to load projects");
         }
 
+        projects = await response.json();
 
-        projects =
-            await response.json();
-
+        saveCache(PROJECT_CACHE_KEY, projects);
 
         renderProjects();
 
-
     } catch (error) {
 
-        console.error(
-            "Error loading projects:",
-            error
-        );
+        console.error("Error loading projects:", error);
 
-        projectsContainer.textContent =
-            "Unable to load projects.";
+        if (!cachedProjects) {
+            projectsContainer.textContent =
+                "Unable to load projects.";
+        }
     }
 }
 
@@ -1031,110 +907,148 @@ function renderProjects() {
 
     projectsContainer.textContent = "";
 
-
     if (projects.length === 0) {
 
-        const message =
-            document.createElement("p");
-
-        message.textContent =
-            "No projects found.";
+        const message = document.createElement("p");
+        message.textContent = "No projects found.";
 
         projectsContainer.appendChild(message);
 
         return;
     }
 
-
     projects.forEach(function (project) {
 
-        const projectItem =
-            document.createElement("div");
+        const projectItem = document.createElement("div");
+        projectItem.className = "task-item";
 
-        projectItem.className =
-            "task-item";
+        const name = document.createElement("h3");
+        name.textContent = project.name;
 
-
-        const name =
-            document.createElement("h3");
-
-        name.textContent =
-            project.name;
-
-
-        const owner =
-            document.createElement("p");
-
+        const owner = document.createElement("p");
         owner.textContent =
             `Owner ID: ${project.owner_id}`;
 
-
-        const id =
-            document.createElement("p");
-
+        const id = document.createElement("p");
         id.textContent =
             `Project ID: ${project.id}`;
 
+        const actions = document.createElement("div");
+        actions.className = "task-actions";
 
-        // ACTIONS
-        const actions =
-            document.createElement("div");
+        const editButton = document.createElement("button");
+        editButton.textContent = "Edit";
+        editButton.className = "edit-btn";
 
-        actions.className =
-            "task-actions";
+        editButton.addEventListener("click", function () {
+            editProject(project.id);
+        });
 
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.className = "delete-btn";
 
-        // EDIT PROJECT
-        const editButton =
-            document.createElement("button");
-
-        editButton.textContent =
-            "Edit";
-
-        editButton.className =
-            "edit-btn";
-
-        editButton.addEventListener(
-            "click",
-            function () {
-                editProject(project.id);
-            }
-        );
-
-
-        // DELETE PROJECT
-        const deleteButton =
-            document.createElement("button");
-
-        deleteButton.textContent =
-            "Delete";
-
-        deleteButton.className =
-            "delete-btn";
-
-        deleteButton.addEventListener(
-            "click",
-            function () {
-                deleteProject(project.id);
-            }
-        );
-
+        deleteButton.addEventListener("click", function () {
+            deleteProject(project.id);
+        });
 
         actions.appendChild(editButton);
         actions.appendChild(deleteButton);
-
 
         projectItem.appendChild(name);
         projectItem.appendChild(owner);
         projectItem.appendChild(id);
         projectItem.appendChild(actions);
 
-
-        projectsContainer.appendChild(
-            projectItem
-        );
+        projectsContainer.appendChild(projectItem);
     });
 }
+
+
+// ==========================================
+// CREATE PROJECT
+// ==========================================
+
+async function createProject(event) {
+
+    event.preventDefault();
+
+    const name = projectName.value.trim();
+    const ownerId = Number(projectOwnerId.value);
+
+    clearFieldError(projectName);
+    clearFieldError(projectOwnerId);
+
+    if (!name) {
+
+        showFieldError(
+            projectName,
+            "Project name is required."
+        );
+
+        projectName.focus();
+        return;
+    }
+
+    if (!ownerId || ownerId <= 0) {
+
+        showFieldError(
+            projectOwnerId,
+            "Please enter a valid owner ID."
+        );
+
+        projectOwnerId.focus();
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `${API_URL}/projects`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name: name,
+                    owner_id: ownerId
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+            showFieldError(
+                projectOwnerId,
+                data.detail || "Failed to create project."
+            );
+
+            return;
+        }
+
+        projects.push(data);
+
+        saveCache(PROJECT_CACHE_KEY, projects);
+
+        projectName.value = "";
+        projectOwnerId.value = "";
+
+        renderProjects();
+
+    } catch (error) {
+
+        console.error("Error creating project:", error);
+
+        showFieldError(
+            projectOwnerId,
+            "Backend server is not reachable."
+        );
+    }
+}
+
 
 // ==========================================
 // EDIT PROJECT
@@ -1162,7 +1076,6 @@ async function editProject(projectId) {
     const name = newName.trim();
 
     if (!name) {
-        alert("Project name cannot be empty.");
         return;
     }
 
@@ -1177,8 +1090,7 @@ async function editProject(projectId) {
 
     const ownerId = Number(newOwnerId);
 
-    if (!ownerId) {
-        alert("Please enter a valid owner ID.");
+    if (!ownerId || ownerId <= 0) {
         return;
     }
 
@@ -1188,11 +1100,9 @@ async function editProject(projectId) {
             `${API_URL}/projects/${projectId}`,
             {
                 method: "PUT",
-
                 headers: {
                     "Content-Type": "application/json"
                 },
-
                 body: JSON.stringify({
                     name: name,
                     owner_id: ownerId
@@ -1201,20 +1111,10 @@ async function editProject(projectId) {
         );
 
         if (!response.ok) {
-
-            const errorData =
-                await response.json();
-
-            alert(
-                errorData.detail ||
-                "Failed to update project."
-            );
-
             return;
         }
 
-        const updatedProject =
-            await response.json();
+        const updatedProject = await response.json();
 
         projects = projects.map(function (item) {
 
@@ -1225,16 +1125,12 @@ async function editProject(projectId) {
             return item;
         });
 
+        saveCache(PROJECT_CACHE_KEY, projects);
+
         renderProjects();
 
     } catch (error) {
-
-        console.error(
-            "Error updating project:",
-            error
-        );
-
-        alert("Unable to update project.");
+        console.error("Error updating project:", error);
     }
 }
 
@@ -1263,15 +1159,6 @@ async function deleteProject(projectId) {
         );
 
         if (!response.ok) {
-
-            const errorData =
-                await response.json();
-
-            alert(
-                errorData.detail ||
-                "Failed to delete project."
-            );
-
             return;
         }
 
@@ -1279,109 +1166,104 @@ async function deleteProject(projectId) {
             return project.id !== projectId;
         });
 
+        saveCache(PROJECT_CACHE_KEY, projects);
+
         renderProjects();
 
     } catch (error) {
-
-        console.error(
-            "Error deleting project:",
-            error
-        );
-
-        alert("Unable to delete project.");
+        console.error("Error deleting project:", error);
     }
 }
+
+
 // ==========================================
-// CREATE PROJECT
+// QUICK ADD
 // ==========================================
 
-async function createProject(event) {
+if (quickAddForm) {
 
-    event.preventDefault();
+    quickAddForm.addEventListener(
+        "submit",
+        async function (event) {
 
+            event.preventDefault();
 
-    const name =
-        projectName.value.trim();
+            const description =
+                quickAddInput.value.trim();
 
-    const ownerId =
-        Number(projectOwnerId.value);
+            quickAddInput.classList.remove("input-error");
 
+            if (!description) {
 
-    if (!name || !ownerId) {
+                showFieldError(
+                    quickAddInput,
+                    "Please enter a task description."
+                );
 
-        alert(
-            "Please enter project name and owner ID."
-        );
+                quickAddInput.focus();
+                return;
+            }
 
-        return;
-    }
+            try {
 
+                const response = await fetch(
+                    `${API_URL}/tasks/quick-add`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            description: description,
+                            project_id: 1
+                        })
+                    }
+                );
 
-    try {
+                const data = await response.json();
 
-        const response =
-            await fetch(
-                `${API_URL}/projects`,
-                {
-                    method: "POST",
+                if (!response.ok) {
 
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                    showFieldError(
+                        quickAddInput,
+                        data.detail
+                            ? JSON.stringify(data.detail)
+                            : "Quick-Add failed."
+                    );
 
-                    body: JSON.stringify({
-                        name: name,
-                        owner_id: ownerId
-                    })
+                    return;
                 }
-            );
 
+                quickAddInput.value = "";
 
-        if (!response.ok) {
+                clearFieldError(quickAddInput);
 
-            const errorData =
-                await response.json();
+                showSuccess(
+                    quickAddResult,
+                    "Task created successfully!"
+                );
 
-            alert(
-                errorData.detail ||
-                "Failed to create project."
-            );
+                await loadTasks();
 
-            return;
+            } catch (error) {
+
+                console.error(
+                    "Quick-Add error:",
+                    error
+                );
+
+                showFieldError(
+                    quickAddInput,
+                    "Unable to connect to backend."
+                );
+            }
         }
-
-
-        const newProject =
-            await response.json();
-
-
-        projects.push(newProject);
-
-
-        projectName.value = "";
-
-        projectOwnerId.value = "";
-
-
-        renderProjects();
-
-
-    } catch (error) {
-
-        console.error(
-            "Error creating project:",
-            error
-        );
-
-        alert(
-            "Backend server is not reachable."
-        );
-    }
+    );
 }
 
 
 // ==========================================
-// TASK FORM
+// FORM EVENTS
 // ==========================================
 
 if (taskForm) {
@@ -1397,26 +1279,14 @@ if (taskForm) {
     );
 }
 
-
-// ==========================================
-// USER FORM
-// ==========================================
-
 if (userForm) {
-
     userForm.addEventListener(
         "submit",
         createUser
     );
 }
 
-
-// ==========================================
-// PROJECT FORM
-// ==========================================
-
 if (projectForm) {
-
     projectForm.addEventListener(
         "submit",
         createProject
@@ -1425,46 +1295,30 @@ if (projectForm) {
 
 
 // ==========================================
-// SEARCH
+// SEARCH + FILTER
 // ==========================================
 
 if (searchInput) {
 
     searchInput.addEventListener(
         "input",
-        function () {
-            renderTasks();
-        }
+        renderTasks
     );
 }
-
-
-// ==========================================
-// PRIORITY FILTER
-// ==========================================
 
 if (priorityFilter) {
 
     priorityFilter.addEventListener(
         "change",
-        function () {
-            renderTasks();
-        }
+        renderTasks
     );
 }
-
-
-// ==========================================
-// STATUS FILTER
-// ==========================================
 
 if (statusFilter) {
 
     statusFilter.addEventListener(
         "change",
-        function () {
-            renderTasks();
-        }
+        renderTasks
     );
 }
 
@@ -1474,95 +1328,5 @@ if (statusFilter) {
 // ==========================================
 
 loadTasks();
-
 loadUsers();
-
 loadProjects();
-
-// ==========================================
-// AI QUICK-ADD
-// ==========================================
-
-const quickAddForm = document.getElementById("quickAddForm");
-const quickAddInput = document.getElementById("quickAddInput");
-const quickAddResult = document.getElementById("quickAddResult");
-
-if (quickAddForm) {
-
-    quickAddForm.addEventListener(
-        "submit",
-        async function (event) {
-
-            event.preventDefault();
-
-            const description =
-                quickAddInput.value.trim();
-
-            if (!description) {
-                alert("Please enter a task description.");
-                return;
-            }
-
-            try {
-
-                const response = await fetch(
-                    `${API_URL}/tasks/quick-add`,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-
-                        body: JSON.stringify({
-                            description: description,
-                            project_id: 1
-                        })
-                    }
-                );
-
-                const data =
-                    await response.json();
-
-                if (!response.ok) {
-
-                    console.error(
-                        "Quick-Add error:",
-                        data
-                    );
-
-                    alert(
-                        data.detail
-                            ? JSON.stringify(data.detail)
-                            : "Quick-Add failed."
-                    );
-
-                    return;
-                }
-
-                console.log(
-                    "Quick-Add success:",
-                    data
-                );
-
-                quickAddResult.textContent =
-                    "✅ Task created successfully!";
-
-                quickAddInput.value = "";
-
-                await loadTasks();
-
-            } catch (error) {
-
-                console.error(
-                    "Quick-Add error:",
-                    error
-                );
-
-                alert(
-                    "Unable to connect to backend."
-                );
-            }
-        }
-    );
-}

@@ -1,45 +1,76 @@
+# backend/benchmark.py
+
 from algorithms import (
-    insertion_sort_with_comparisons,
-    linear_search_with_comparisons,
-    binary_search_with_comparisons,
+    insertion_sort_count,
+    linear_search_count,
+    binary_search_count,
 )
 
 
-def create_numbers(size):
-    return list(range(size))
+# =========================================================
+# CREATE REALISTIC TASK RECORDS
+# =========================================================
 
+def create_tasks(size):
+    priorities = ["low", "medium", "high"]
+
+    tasks = []
+
+    for i in range(size):
+        tasks.append(
+            {
+                "id": i + 1,
+                "title": f"Task {i + 1}",
+                "priority": priorities[i % 3],
+                "due_date": f"2026-12-{(i % 28) + 1:02d}",
+                "status": "pending",
+                "project_id": 1,
+            }
+        )
+
+    return tasks
+
+
+# =========================================================
+# RUN BENCHMARK
+# =========================================================
 
 def run_benchmark(size):
-    numbers = create_numbers(size)
+    tasks = create_tasks(size)
 
     # ------------------------------------------
     # INSERTION SORT
+    # Sort by task title
     # ------------------------------------------
 
-    sorted_numbers, sort_comparisons = (
-        insertion_sort_with_comparisons(numbers.copy())
+    sort_records = [task.copy() for task in tasks]
+
+    sort_comparisons = insertion_sort_count(
+        sort_records,
+        "title",
     )
 
     # ------------------------------------------
     # LINEAR SEARCH
     # ------------------------------------------
 
-    linear_index, linear_comparisons = (
-        linear_search_with_comparisons(
-            sorted_numbers,
-            size - 1
-        )
+    linear_records = [task.copy() for task in tasks]
+
+    linear_result = linear_search_count(
+        linear_records,
+        f"Task {size}",
+        "title",
     )
 
     # ------------------------------------------
     # BINARY SEARCH
+    # Records are already sorted by title
     # ------------------------------------------
 
-    binary_index, binary_comparisons = (
-        binary_search_with_comparisons(
-            sorted_numbers,
-            size - 1
-        )
+    binary_result = binary_search_count(
+        sort_records,
+        f"Task {size}",
+        "title",
     )
 
     # ------------------------------------------
@@ -48,15 +79,32 @@ def run_benchmark(size):
 
     print()
     print("=" * 60)
-    print(f"BENCHMARK - {size} RECORDS")
+    print(f"BENCHMARK - {size} TASK RECORDS")
     print("=" * 60)
 
     print(f"Insertion Sort comparisons : {sort_comparisons}")
-    print(f"Linear Search comparisons   : {linear_comparisons}")
-    print(f"Binary Search comparisons   : {binary_comparisons}")
-    print(f"Linear Search index         : {linear_index}")
-    print(f"Binary Search index         : {binary_index}")
+    print(
+        f"Linear Search comparisons   : "
+        f"{linear_result['comparison_count']}"
+    )
+    print(
+        f"Binary Search comparisons   : "
+        f"{binary_result['comparison_count']}"
+    )
 
+    print(
+        f"Linear Search index         : "
+        f"{linear_result['index']}"
+    )
+    print(
+        f"Binary Search index         : "
+        f"{binary_result['index']}"
+    )
+
+
+# =========================================================
+# MAIN
+# =========================================================
 
 def main():
     print("TaskFlow Algorithm Benchmark")
