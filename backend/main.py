@@ -1,4 +1,3 @@
-
 import time
 import re
 
@@ -170,8 +169,6 @@ def build_quick_add_prompt(description: str):
 
 def parse_quick_add(description: str):
     original = description or ""
-
-    # Working copy only for matching
     lower_text = original.lower()
 
     # -----------------------------------------------------
@@ -229,7 +226,6 @@ def parse_quick_add(description: str):
 
     title = original
 
-    # Remove ALL priority keywords
     priority_phrases = [
         "urgent",
         "asap",
@@ -245,7 +241,6 @@ def parse_quick_add(description: str):
             flags=re.IGNORECASE,
         )
 
-    # Remove matched date phrase
     if due_date_hint:
         title = re.sub(
             r"\b" + re.escape(due_date_hint) + r"\b",
@@ -258,22 +253,8 @@ def parse_quick_add(description: str):
     # CLEAN TITLE
     # -----------------------------------------------------
 
-    # Remove extra spaces
-    title = re.sub(
-        r"\s+",
-        " ",
-        title,
-    ).strip()
-
-    # Remove spaces before punctuation
-    title = re.sub(
-        r"\s+([,.;!?])",
-        r"\1",
-        title,
-    )
-
-    # Remove unwanted punctuation from beginning/end
-    title = title.strip(" ,.")
+    # Convert multiple spaces into one, trim ends
+    title = re.sub(r"\s+", " ", title).strip()
 
     if not title:
         title = "Untitled task"
