@@ -1,6 +1,7 @@
-/* =========================================
-   🚀 TASKFLOW - FINAL COLORFUL UI
-========================================= */
+/* =========================================================
+   🚀 TASKFLOW — PREMIUM DARK NEON UI
+   Blue + Purple + Pink Glassmorphism Theme
+========================================================= */
 
 * {
     margin: 0;
@@ -8,81 +9,144 @@
     box-sizing: border-box;
 }
 
+:root {
+    --bg: #050b24;
+    --bg2: #081337;
+    --card: rgba(12, 23, 58, 0.72);
+    --card2: rgba(17, 30, 72, 0.82);
+
+    --blue: #2563eb;
+    --cyan: #06b6d4;
+    --purple: #7c3aed;
+    --violet: #8b5cf6;
+    --pink: #ec4899;
+    --red: #f43f5e;
+
+    --text: #f8fafc;
+    --muted: #aab6d3;
+    --border: rgba(99, 102, 241, 0.35);
+
+    --shadow: 0 15px 45px rgba(0, 0, 0, 0.35);
+}
+
+/* =========================================================
+   BODY
+========================================================= */
+
 body {
     font-family: Arial, Helvetica, sans-serif;
     min-height: 100vh;
-    color: #1e293b;
+    color: var(--text);
 
     background:
-        radial-gradient(circle at 5% 5%, #dbeafe 0, transparent 25%),
-        radial-gradient(circle at 95% 10%, #fce7f3 0, transparent 25%),
-        radial-gradient(circle at 50% 100%, #dcfce7 0, transparent 30%),
-        #f8fafc;
+        radial-gradient(
+            circle at 10% 10%,
+            rgba(37, 99, 235, 0.25),
+            transparent 28%
+        ),
+        radial-gradient(
+            circle at 90% 15%,
+            rgba(236, 72, 153, 0.20),
+            transparent 28%
+        ),
+        radial-gradient(
+            circle at 50% 90%,
+            rgba(124, 58, 237, 0.18),
+            transparent 30%
+        ),
+        linear-gradient(
+            135deg,
+            #020617,
+            #061337 45%,
+            #080b2d 100%
+        );
+
+    background-attachment: fixed;
 }
+
+/* =========================================================
+   CONTAINER
+========================================================= */
 
 .container {
-    width: min(1150px, 92%);
+    width: min(1400px, 92%);
     margin: auto;
-    padding: 35px 0 60px;
+    padding: 30px 0 60px;
 }
 
-/* =========================================
+/* =========================================================
    HEADER
-========================================= */
+========================================================= */
 
 header {
     position: sticky;
-top: 15px;
-z-index: 1000;
+    top: 15px;
+    z-index: 1000;
+
     overflow: hidden;
 
-    padding: 45px 40px;
+    padding: 42px 45px;
     margin-bottom: 25px;
 
-    border-radius: 25px;
+    border-radius: 24px;
+
+    border: 1px solid rgba(59, 130, 246, 0.45);
 
     color: white;
 
     background:
         linear-gradient(
-            135deg,
-            #4f46e5,
-            #7c3aed,
-            #db2777
+            120deg,
+            #0b2c82 0%,
+            #35208c 45%,
+            #9b1d75 100%
         );
 
     box-shadow:
-        0 18px 40px rgba(79, 70, 229, 0.25);
+        0 20px 50px rgba(30, 64, 175, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
 header::before {
     content: "";
 
     position: absolute;
-    width: 220px;
-    height: 220px;
 
-    right: -70px;
-    top: -110px;
+    width: 300px;
+    height: 300px;
+
+    right: -100px;
+    top: -160px;
 
     border-radius: 50%;
 
-    background: rgba(255, 255, 255, 0.18);
+    background:
+        radial-gradient(
+            circle,
+            rgba(236, 72, 153, 0.30),
+            transparent 70%
+        );
 }
 
 header::after {
     content: "";
 
     position: absolute;
-    width: 140px;
-    height: 140px;
 
-    left: 45%;
-    bottom: -100px;
+    width: 240px;
+    height: 240px;
+
+    left: 42%;
+    bottom: -190px;
 
     border-radius: 50%;
 
-    background: rgba(255, 255, 255, 0.12);
+    background:
+        radial-gradient(
+            circle,
+            rgba(139, 92, 246, 0.30),
+            transparent 70%
+        );
 }
 
 header h1,
@@ -92,130 +156,177 @@ header p {
 }
 
 header h1 {
-    font-size: 40px;
+    font-size: 44px;
     margin-bottom: 8px;
+    letter-spacing: -1px;
 }
 
 header p {
     font-size: 17px;
-    color: #f5f3ff;
+    color: #e0e7ff;
 }
 
-/* =========================================
+/* =========================================================
    SECTIONS
-========================================= */
+========================================================= */
 
 section {
-    background: rgba(255, 255, 255, 0.95);
+    position: relative;
 
-    padding: 28px;
-    margin-bottom: 24px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(15, 28, 70, 0.82),
+            rgba(8, 18, 48, 0.70)
+        );
 
-    border-radius: 20px;
+    padding: 26px;
 
-    border: 1px solid #e2e8f0;
+    margin-bottom: 22px;
 
-    box-shadow:
-        0 8px 25px rgba(15, 23, 42, 0.06);
+    border-radius: 22px;
+
+    border: 1px solid rgba(99, 102, 241, 0.28);
+
+    box-shadow: var(--shadow);
+
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 }
 
 section h2 {
     margin-bottom: 20px;
 
-    font-size: 22px;
+    font-size: 23px;
 
-    color: #312e81;
+    color: #c084fc;
+
+    text-shadow:
+        0 0 18px rgba(192, 132, 252, 0.25);
 }
 
-/* =========================================
+/* =========================================================
    INPUTS
-========================================= */
+========================================================= */
 
 input,
 select {
     width: 100%;
 
     padding: 13px 15px;
+
     margin-bottom: 14px;
 
-    border: 1px solid #dbe3ef;
+    border-radius: 11px;
 
-    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.30);
 
-    background: #f8fafc;
+    background:
+        rgba(15, 29, 70, 0.90);
 
-    color: #1e293b;
+    color: #f8fafc;
 
     font-size: 15px;
 
     outline: none;
 
-    transition: 0.2s;
+    transition: 0.25s ease;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+input::placeholder {
+    color: #8d9abb;
 }
 
 input:focus,
 select:focus {
-    background: white;
+    border-color: #c026d3;
 
-    border-color: #6366f1;
+    background:
+        rgba(19, 32, 78, 0.98);
 
     box-shadow:
-        0 0 0 4px rgba(99, 102, 241, 0.10);
+        0 0 0 3px rgba(139, 92, 246, 0.12),
+        0 0 22px rgba(139, 92, 246, 0.15);
 }
 
-/* =========================================
+select option {
+    background: #0b1638;
+    color: white;
+}
+
+/* =========================================================
    BUTTONS
-========================================= */
+========================================================= */
 
 button {
     border: none;
 
-    padding: 11px 17px;
+    padding: 11px 18px;
 
-    border-radius: 11px;
+    border-radius: 10px;
 
     color: white;
 
     font-size: 14px;
 
-    font-weight: 600;
+    font-weight: 700;
 
     cursor: pointer;
 
     background:
         linear-gradient(
             135deg,
-            #6366f1,
-            #8b5cf6
+            #2563eb,
+            #7c3aed,
+            #db2777
         );
 
     box-shadow:
-        0 6px 15px rgba(99, 102, 241, 0.20);
+        0 7px 20px rgba(37, 99, 235, 0.25);
 
-    transition: 0.2s ease;
+    transition: 0.22s ease;
 }
 
 button:hover {
     transform: translateY(-2px);
 
     box-shadow:
-        0 10px 22px rgba(99, 102, 241, 0.28);
+        0 10px 25px rgba(139, 92, 246, 0.35);
+}
+
+button:active {
+    transform: translateY(0);
 }
 
 .task-form button {
     width: 100%;
+
     padding: 14px;
+
     font-size: 15px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #1d4ed8,
+            #7c3aed,
+            #db2777
+        );
 }
 
-/* =========================================
+/* =========================================================
    SEARCH & FILTERS
-========================================= */
+========================================================= */
 
 #searchInput {
-    background: white;
+    background:
+        rgba(12, 25, 60, 0.92);
 
-    border-color: #c7d2fe;
+    border-color:
+        rgba(59, 130, 246, 0.30);
 }
 
 #priorityFilter,
@@ -228,9 +339,9 @@ button:hover {
     margin-right: 1%;
 }
 
-/* =========================================
-   SUMMARY
-========================================= */
+/* =========================================================
+   SUMMARY CARDS
+========================================================= */
 
 #totalTasks,
 #pendingTasks,
@@ -242,7 +353,7 @@ button:hover {
 
     margin: 0 1% 20px 0;
 
-    padding: 22px 15px;
+    padding: 21px 15px;
 
     text-align: center;
 
@@ -250,129 +361,126 @@ button:hover {
 
     font-weight: 800;
 
-    border-radius: 17px;
+    border-radius: 16px;
 
-    border: 1px solid #e2e8f0;
+    border: 1px solid rgba(99, 102, 241, 0.30);
 
     transition: 0.25s ease;
+
+    background:
+        rgba(12, 25, 60, 0.85);
 }
 
 #totalTasks {
-    background: linear-gradient(135deg, #eef2ff, #ffffff);
-    color: #4f46e5;
+    color: #60a5fa;
+
+    box-shadow:
+        inset 0 0 25px rgba(37, 99, 235, 0.08);
 }
 
 #pendingTasks {
-    background: linear-gradient(135deg, #fff7ed, #ffffff);
-    color: #ea580c;
+    color: #fbbf24;
+
+    box-shadow:
+        inset 0 0 25px rgba(251, 191, 36, 0.07);
 }
 
 #completedTasks {
-    background: linear-gradient(135deg, #ecfdf5, #ffffff);
-    color: #16a34a;
+    color: #4ade80;
+
+    box-shadow:
+        inset 0 0 25px rgba(34, 197, 94, 0.07);
 }
 
 #highPriorityTasks {
-    background: linear-gradient(135deg, #fff1f2, #ffffff);
-    color: #e11d48;
+    color: #fb7185;
+
+    box-shadow:
+        inset 0 0 25px rgba(244, 63, 94, 0.08);
 }
 
 #totalTasks:hover,
 #pendingTasks:hover,
 #completedTasks:hover,
 #highPriorityTasks:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
+
+    border-color:
+        rgba(139, 92, 246, 0.50);
 
     box-shadow:
-        0 12px 25px rgba(15, 23, 42, 0.10);
+        0 12px 30px rgba(0, 0, 0, 0.35);
 }
 
 #totalTasks::after {
     content: " Total Tasks";
-
-    display: block;
-
-    font-size: 12px;
-
-    font-weight: 500;
-
-    color: #64748b;
-
-    margin-top: 5px;
 }
 
 #pendingTasks::after {
     content: " Pending";
-
-    display: block;
-
-    font-size: 12px;
-
-    font-weight: 500;
-
-    color: #64748b;
-
-    margin-top: 5px;
 }
 
 #completedTasks::after {
     content: " Completed";
-
-    display: block;
-
-    font-size: 12px;
-
-    font-weight: 500;
-
-    color: #64748b;
-
-    margin-top: 5px;
 }
 
 #highPriorityTasks::after {
     content: " High Priority";
+}
 
+#totalTasks::after,
+#pendingTasks::after,
+#completedTasks::after,
+#highPriorityTasks::after {
     display: block;
 
     font-size: 12px;
 
     font-weight: 500;
 
-    color: #64748b;
+    color: #8d9abb;
 
     margin-top: 5px;
 }
 
-/* =========================================
-   TASK / USER / PROJECT CARDS
-========================================= */
+/* =========================================================
+   TASK CARDS
+========================================================= */
 
 .task-item {
     position: relative;
 
-    padding: 20px;
+    padding: 20px 20px 20px 25px;
 
-    margin-bottom: 15px;
+    margin-bottom: 14px;
 
-    background: white;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(18, 34, 78, 0.90),
+            rgba(8, 20, 51, 0.88)
+        );
 
-    border: 1px solid #e2e8f0;
+    border: 1px solid rgba(99, 102, 241, 0.24);
 
-    border-radius: 17px;
+    border-radius: 16px;
 
     box-shadow:
-        0 5px 18px rgba(15, 23, 42, 0.05);
+        0 7px 25px rgba(0, 0, 0, 0.20);
 
     transition: 0.25s ease;
+
+    overflow: hidden;
 }
 
 .task-item:hover {
-    transform: translateY(-4px);
+    transform: translateY(-3px);
 
-    border-color: #c7d2fe;
+    border-color:
+        rgba(139, 92, 246, 0.55);
 
     box-shadow:
-        0 14px 30px rgba(79, 70, 229, 0.11);
+        0 14px 35px rgba(37, 99, 235, 0.16);
 }
 
 .task-item::before {
@@ -381,8 +489,8 @@ button:hover {
     position: absolute;
 
     left: 0;
-    top: 15px;
-    bottom: 15px;
+    top: 14px;
+    bottom: 14px;
 
     width: 4px;
 
@@ -391,30 +499,34 @@ button:hover {
     background:
         linear-gradient(
             180deg,
-            #6366f1,
+            #3b82f6,
+            #8b5cf6,
             #ec4899
         );
+
+    box-shadow:
+        0 0 12px rgba(139, 92, 246, 0.45);
 }
 
 .task-item h3 {
     margin-bottom: 9px;
 
-    font-size: 19px;
+    font-size: 18px;
 
-    color: #111827;
+    color: #f8fafc;
 }
 
 .task-item p {
-    margin: 5px 0;
+    margin: 6px 0;
 
-    color: #64748b;
+    color: #aab6d3;
 
     font-size: 14px;
 }
 
-/* =========================================
-   ACTION BUTTONS
-========================================= */
+/* =========================================================
+   TASK ACTIONS
+========================================================= */
 
 .task-actions {
     display: flex;
@@ -431,7 +543,7 @@ button:hover {
         linear-gradient(
             135deg,
             #2563eb,
-            #06b6d4
+            #4f46e5
         );
 }
 
@@ -439,14 +551,14 @@ button:hover {
     background:
         linear-gradient(
             135deg,
-            #ef4444,
-            #f43f5e
+            #e11d48,
+            #be123c
         );
 }
 
-/* =========================================
+/* =========================================================
    USERS & PROJECTS
-========================================= */
+========================================================= */
 
 #users,
 #projects {
@@ -468,7 +580,7 @@ button:hover {
         linear-gradient(
             180deg,
             #06b6d4,
-            #3b82f6
+            #2563eb
         );
 }
 
@@ -481,9 +593,139 @@ button:hover {
         );
 }
 
-/* =========================================
+/* =========================================================
+   STATUS / PRIORITY BADGES
+========================================================= */
+
+.task-item .priority,
+.task-item .status {
+    font-weight: 700;
+}
+
+/* =========================================================
+   QUICK ADD
+========================================================= */
+
+#quickAddInput {
+    background:
+        rgba(12, 25, 60, 0.92);
+
+    border-color:
+        rgba(99, 102, 241, 0.30);
+}
+
+#quickAddButton {
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #7c3aed,
+            #db2777
+        );
+}
+
+/* =========================================================
+   ERROR / SUCCESS MESSAGES
+========================================================= */
+
+.field-error {
+    display: none;
+
+    margin: -8px 0 12px;
+
+    color: #fb7185;
+
+    font-size: 13px;
+
+    font-weight: 600;
+}
+
+.field-error.show {
+    display: block;
+}
+
+.input-error {
+    border-color:
+        #f43f5e !important;
+
+    box-shadow:
+        0 0 0 3px rgba(244, 63, 94, 0.12),
+        0 0 15px rgba(244, 63, 94, 0.10) !important;
+}
+
+.success-message {
+    margin-top: 10px;
+
+    padding: 10px 14px;
+
+    border-radius: 10px;
+
+    background:
+        rgba(22, 163, 74, 0.12);
+
+    border:
+        1px solid rgba(74, 222, 128, 0.25);
+
+    color: #86efac;
+
+    font-size: 14px;
+
+    font-weight: 600;
+}
+
+/* =========================================================
+   NO TASKS MESSAGE
+========================================================= */
+
+#tasksContainer:empty::after {
+    content: "No tasks found.";
+
+    display: block;
+
+    text-align: center;
+
+    padding: 30px;
+
+    color: #7f8db1;
+}
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar {
+    width: 9px;
+}
+
+::-webkit-scrollbar-track {
+    background: #030817;
+}
+
+::-webkit-scrollbar-thumb {
+    background:
+        linear-gradient(
+            180deg,
+            #2563eb,
+            #7c3aed,
+            #db2777
+        );
+
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background:
+        linear-gradient(
+            180deg,
+            #3b82f6,
+            #8b5cf6,
+            #ec4899
+        );
+}
+
+/* =========================================================
    MOBILE
-========================================= */
+========================================================= */
 
 @media (max-width: 768px) {
 
@@ -497,7 +739,7 @@ button:hover {
     }
 
     header h1 {
-        font-size: 30px;
+        font-size: 32px;
     }
 
     section {
@@ -509,12 +751,14 @@ button:hover {
     #completedTasks,
     #highPriorityTasks {
         width: 48%;
+
         margin-right: 1%;
     }
 
     #priorityFilter,
     #statusFilter {
         width: 100%;
+
         margin-right: 0;
     }
 }
@@ -526,46 +770,19 @@ button:hover {
     #completedTasks,
     #highPriorityTasks {
         width: 100%;
+
         margin-right: 0;
     }
 
     .task-actions button {
         flex: 1;
     }
-}
 
-/* ==========================================
-   INLINE VALIDATION
-========================================== */
+    header h1 {
+        font-size: 28px;
+    }
 
-.field-error {
-    display: none;
-    margin: -8px 0 12px;
-    color: #dc2626;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.field-error.show {
-    display: block;
-}
-
-.input-error {
-    border-color: #ef4444 !important;
-
-    box-shadow:
-        0 0 0 4px rgba(239, 68, 68, 0.10) !important;
-}
-
-.success-message {
-    margin-top: 10px;
-    padding: 10px 14px;
-
-    border-radius: 10px;
-
-    background: #ecfdf5;
-    color: #15803d;
-
-    font-size: 14px;
-    font-weight: 600;
+    header p {
+        font-size: 15px;
+    }
 }
