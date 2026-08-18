@@ -1,0 +1,1548 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>TaskFlow - Authentication</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --blue: #2563eb;
+            --cyan: #06b6d4;
+            --purple: #7c3aed;
+            --violet: #8b5cf6;
+            --pink: #db2777;
+            --red: #f43f5e;
+
+            --bg: #020617;
+            --text: #f8fafc;
+            --muted: #9aa8c7;
+        }
+
+
+        /* ================================
+           BODY
+        ================================= */
+
+        body {
+
+            min-height: 100vh;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            color: var(--text);
+
+            overflow-x: hidden;
+
+            background:
+
+                radial-gradient(
+                    circle at 10% 10%,
+                    rgba(37, 99, 235, 0.30),
+                    transparent 30%
+                ),
+
+                radial-gradient(
+                    circle at 90% 15%,
+                    rgba(236, 72, 153, 0.25),
+                    transparent 30%
+                ),
+
+                radial-gradient(
+                    circle at 50% 100%,
+                    rgba(124, 58, 237, 0.25),
+                    transparent 35%
+                ),
+
+                linear-gradient(
+                    135deg,
+                    #020617,
+                    #071337 45%,
+                    #10072d
+                );
+        }
+
+
+        /* ================================
+           BACKGROUND GLOW
+        ================================= */
+
+        body::before {
+
+            content: "";
+
+            position: fixed;
+
+            width: 280px;
+            height: 280px;
+
+            left: -100px;
+            top: 20%;
+
+            border-radius: 50%;
+
+            background:
+                rgba(6, 182, 212, 0.12);
+
+            box-shadow:
+                0 0 120px
+                rgba(6, 182, 212, 0.20);
+
+            pointer-events: none;
+        }
+
+
+        body::after {
+
+            content: "";
+
+            position: fixed;
+
+            width: 320px;
+            height: 320px;
+
+            right: -120px;
+            bottom: 5%;
+
+            border-radius: 50%;
+
+            background:
+                rgba(236, 72, 153, 0.12);
+
+            box-shadow:
+                0 0 130px
+                rgba(236, 72, 153, 0.20);
+
+            pointer-events: none;
+        }
+
+
+        /* ================================
+           AUTH CARD
+        ================================= */
+
+        .auth-container {
+
+            position: relative;
+
+            width: 440px;
+
+            max-width: 100%;
+
+            padding: 38px;
+
+            border-radius: 28px;
+
+            border:
+                1px solid
+                rgba(139, 92, 246, 0.35);
+
+            background:
+
+                linear-gradient(
+                    145deg,
+                    rgba(18, 31, 75, 0.92),
+                    rgba(5, 13, 39, 0.86)
+                );
+
+            box-shadow:
+
+                0 30px 80px
+                rgba(0, 0, 0, 0.50),
+
+                0 0 60px
+                rgba(99, 102, 241, 0.10),
+
+                inset 0 1px 0
+                rgba(255, 255, 255, 0.08);
+
+            backdrop-filter:
+                blur(20px);
+
+            -webkit-backdrop-filter:
+                blur(20px);
+
+            overflow: hidden;
+        }
+
+
+        .auth-container::before {
+
+            content: "";
+
+            position: absolute;
+
+            width: 250px;
+            height: 250px;
+
+            right: -110px;
+            top: -120px;
+
+            border-radius: 50%;
+
+            background:
+
+                radial-gradient(
+                    circle,
+                    rgba(236, 72, 153, 0.28),
+                    transparent 70%
+                );
+
+            pointer-events: none;
+        }
+
+
+        .auth-container::after {
+
+            content: "";
+
+            position: absolute;
+
+            width: 240px;
+            height: 240px;
+
+            left: -130px;
+            bottom: -140px;
+
+            border-radius: 50%;
+
+            background:
+
+                radial-gradient(
+                    circle,
+                    rgba(37, 99, 235, 0.25),
+                    transparent 70%
+                );
+
+            pointer-events: none;
+        }
+
+
+        /* ================================
+           LOGO
+        ================================= */
+
+        .logo {
+
+            position: relative;
+
+            z-index: 2;
+
+            text-align: center;
+
+            margin-bottom: 28px;
+        }
+
+
+        .logo-icon {
+
+            width: 68px;
+            height: 68px;
+
+            margin:
+                0 auto 14px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 20px;
+
+            font-size: 34px;
+
+            background:
+
+                linear-gradient(
+                    135deg,
+                    rgba(59, 130, 246, 0.25),
+                    rgba(139, 92, 246, 0.30),
+                    rgba(236, 72, 153, 0.25)
+                );
+
+            border:
+                1px solid
+                rgba(139, 92, 246, 0.35);
+
+            box-shadow:
+
+                0 0 35px
+                rgba(124, 58, 237, 0.20);
+        }
+
+
+        .logo h1 {
+
+            font-size: 36px;
+
+            letter-spacing: -1px;
+
+            background:
+
+                linear-gradient(
+                    135deg,
+                    #60a5fa,
+                    #a78bfa,
+                    #f472b6
+                );
+
+            -webkit-background-clip: text;
+
+            -webkit-text-fill-color: transparent;
+        }
+
+
+        .logo p {
+
+            margin-top: 8px;
+
+            color: var(--muted);
+
+            font-size: 14px;
+        }
+
+
+        /* ================================
+           TABS
+        ================================= */
+
+        .tabs {
+
+            position: relative;
+
+            z-index: 2;
+
+            display: flex;
+
+            gap: 5px;
+
+            padding: 5px;
+
+            margin-bottom: 26px;
+
+            border-radius: 13px;
+
+            background:
+                rgba(3, 10, 30, 0.65);
+
+            border:
+                1px solid
+                rgba(99, 102, 241, 0.18);
+        }
+
+
+        .tab {
+
+            width: 50%;
+
+            padding: 12px;
+
+            border: none;
+
+            border-radius: 9px;
+
+            background: transparent;
+
+            color: #8996b7;
+
+            cursor: pointer;
+
+            font-size: 14px;
+
+            font-weight: 700;
+
+            transition: 0.25s ease;
+        }
+
+
+        .tab:hover {
+
+            color: white;
+        }
+
+
+        .tab.active {
+
+            color: white;
+
+            background:
+
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #7c3aed
+                );
+
+            box-shadow:
+
+                0 5px 18px
+                rgba(99, 102, 241, 0.25);
+        }
+
+
+        /* ================================
+           FORMS
+        ================================= */
+
+        form {
+
+            position: relative;
+
+            z-index: 2;
+        }
+
+
+        .form-group {
+
+            margin-bottom: 17px;
+        }
+
+
+        .form-group label {
+
+            display: block;
+
+            margin-bottom: 7px;
+
+            color: #dbeafe;
+
+            font-size: 13px;
+
+            font-weight: 700;
+        }
+
+
+        input {
+
+            width: 100%;
+
+            padding: 14px 15px;
+
+            border-radius: 11px;
+
+            border:
+                1px solid
+                rgba(99, 102, 241, 0.25);
+
+            background:
+                rgba(5, 14, 40, 0.78);
+
+            color: white;
+
+            font-size: 15px;
+
+            outline: none;
+
+            transition: 0.25s ease;
+        }
+
+
+        input::placeholder {
+
+            color: #687697;
+        }
+
+
+        input:hover {
+
+            border-color:
+                rgba(139, 92, 246, 0.45);
+        }
+
+
+        input:focus {
+
+            border-color:
+                #8b5cf6;
+
+            background:
+                rgba(9, 20, 52, 0.95);
+
+            box-shadow:
+
+                0 0 0 3px
+                rgba(139, 92, 246, 0.12),
+
+                0 0 25px
+                rgba(124, 58, 237, 0.12);
+        }
+
+
+        /* ================================
+           FORGOT PASSWORD
+        ================================= */
+
+        .forgot-password {
+
+            position: relative;
+
+            z-index: 3;
+
+            text-align: right;
+
+            margin-top: -7px;
+
+            margin-bottom: 16px;
+        }
+
+
+        .forgot-password a {
+
+            color: #a78bfa;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            text-decoration: none;
+
+            cursor: pointer;
+
+            transition: 0.2s ease;
+        }
+
+
+        .forgot-password a:hover {
+
+            color: #f0abfc;
+
+            text-decoration: underline;
+        }
+
+
+        /* ================================
+           BUTTON
+        ================================= */
+
+        .submit-btn {
+
+            width: 100%;
+
+            margin-top: 8px;
+
+            padding: 14px;
+
+            border: none;
+
+            border-radius: 11px;
+
+            color: white;
+
+            font-size: 15px;
+
+            font-weight: 800;
+
+            cursor: pointer;
+
+            background:
+
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #7c3aed,
+                    #db2777
+                );
+
+            box-shadow:
+
+                0 10px 28px
+                rgba(79, 70, 229, 0.28);
+
+            transition: 0.25s ease;
+        }
+
+
+        .submit-btn:hover {
+
+            transform:
+                translateY(-2px);
+
+            box-shadow:
+
+                0 14px 35px
+                rgba(139, 92, 246, 0.38);
+        }
+
+
+        .submit-btn:active {
+
+            transform:
+                translateY(0);
+        }
+
+
+        /* ================================
+           BACK BUTTON
+        ================================= */
+
+        .back-login {
+
+            position: relative;
+
+            z-index: 2;
+
+            margin-top: 17px;
+
+            text-align: center;
+        }
+
+
+        .back-login a {
+
+            color: #93c5fd;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            text-decoration: none;
+
+            cursor: pointer;
+        }
+
+
+        .back-login a:hover {
+
+            color: #c4b5fd;
+
+            text-decoration: underline;
+        }
+
+
+        /* ================================
+           MESSAGE
+        ================================= */
+
+        .message {
+
+            position: relative;
+
+            z-index: 2;
+
+            display: none;
+
+            margin-top: 16px;
+
+            padding: 12px 14px;
+
+            border-radius: 11px;
+
+            font-size: 13px;
+
+            font-weight: 700;
+        }
+
+
+        .message.success {
+
+            display: block;
+
+            color: #86efac;
+
+            background:
+                rgba(22, 163, 74, 0.12);
+
+            border:
+                1px solid
+                rgba(74, 222, 128, 0.25);
+        }
+
+
+        .message.error {
+
+            display: block;
+
+            color: #fda4af;
+
+            background:
+                rgba(244, 63, 94, 0.10);
+
+            border:
+                1px solid
+                rgba(244, 63, 94, 0.25);
+        }
+
+
+        /* ================================
+           DASHBOARD LINK
+        ================================= */
+
+        .dashboard-link {
+
+            position: relative;
+
+            z-index: 2;
+
+            display: none;
+
+            margin-top: 17px;
+
+            padding: 12px;
+
+            text-align: center;
+
+            border-radius: 11px;
+
+            background:
+                rgba(37, 99, 235, 0.08);
+
+            border:
+                1px solid
+                rgba(59, 130, 246, 0.18);
+        }
+
+
+        .dashboard-link a {
+
+            color: #93c5fd;
+
+            font-size: 14px;
+
+            font-weight: 800;
+
+            text-decoration: none;
+        }
+
+
+        .dashboard-link a:hover {
+
+            color: #c4b5fd;
+        }
+
+
+        /* ================================
+           FOOTER
+        ================================= */
+
+        .footer-text {
+
+            position: relative;
+
+            z-index: 2;
+
+            margin-top: 24px;
+
+            text-align: center;
+
+            color: #64748b;
+
+            font-size: 12px;
+        }
+
+
+        /* ================================
+           MOBILE
+        ================================= */
+
+        @media (max-width: 480px) {
+
+            body {
+
+                padding: 15px;
+            }
+
+            .auth-container {
+
+                padding: 30px 22px;
+
+                border-radius: 23px;
+            }
+
+            .logo h1 {
+
+                font-size: 30px;
+            }
+
+            .logo-icon {
+
+                width: 60px;
+                height: 60px;
+
+                font-size: 30px;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="auth-container">
+
+
+    <!-- =========================
+         LOGO
+    ========================== -->
+
+    <div class="logo">
+
+        <div class="logo-icon">
+            🚀
+        </div>
+
+        <h1>
+            TaskFlow
+        </h1>
+
+        <p>
+            Manage your tasks smarter
+        </p>
+
+    </div>
+
+
+    <!-- =========================
+         LOGIN / REGISTER TABS
+    ========================== -->
+
+    <div
+        class="tabs"
+        id="authTabs">
+
+        <button
+            type="button"
+            class="tab active"
+            id="loginTab"
+            onclick="showLogin()">
+
+            Login
+
+        </button>
+
+
+        <button
+            type="button"
+            class="tab"
+            id="registerTab"
+            onclick="showRegister()">
+
+            Register
+
+        </button>
+
+    </div>
+
+
+    <!-- =========================
+         LOGIN FORM
+    ========================== -->
+
+    <form id="loginForm">
+
+
+        <div class="form-group">
+
+            <label>
+                Email
+            </label>
+
+            <input
+                type="email"
+                id="loginEmail"
+                placeholder="Enter your email"
+                required>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="loginPassword"
+                placeholder="Enter your password"
+                required>
+
+        </div>
+
+
+        <!-- FORGOT PASSWORD -->
+
+        <div class="forgot-password">
+
+            <a
+                href="#"
+                onclick="
+                    showForgotPassword();
+                    return false;
+                ">
+
+                Forgot Password?
+
+            </a>
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="submit-btn">
+
+            Login to TaskFlow 🚀
+
+        </button>
+
+
+    </form>
+
+
+    <!-- =========================
+         REGISTER FORM
+    ========================== -->
+
+    <form
+        id="registerForm"
+        style="display:none;">
+
+
+        <div class="form-group">
+
+            <label>
+                Name
+            </label>
+
+            <input
+                type="text"
+                id="registerName"
+                placeholder="Enter your name"
+                required>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                Email
+            </label>
+
+            <input
+                type="email"
+                id="registerEmail"
+                placeholder="Enter your email"
+                required>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label>
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="registerPassword"
+                placeholder="Create a password"
+                required>
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="submit-btn">
+
+            Create Account ✨
+
+        </button>
+
+
+    </form>
+
+
+    <!-- =========================
+         FORGOT PASSWORD FORM
+    ========================== -->
+
+    <form
+        id="forgotPasswordForm"
+        style="display:none;">
+
+
+        <div class="form-group">
+
+            <label>
+                Email Address
+            </label>
+
+            <input
+                type="email"
+                id="forgotEmail"
+                placeholder="Enter your registered email"
+                required>
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="submit-btn">
+
+            Send Reset Link 📩
+
+        </button>
+
+
+        <div class="back-login">
+
+            <a
+                href="#"
+                onclick="
+                    showLogin();
+                    return false;
+                ">
+
+                ← Back to Login
+
+            </a>
+
+        </div>
+
+
+    </form>
+
+
+    <!-- =========================
+         MESSAGE
+    ========================== -->
+
+    <div
+        id="message"
+        class="message">
+    </div>
+
+
+    <!-- =========================
+         DASHBOARD
+    ========================== -->
+
+    <div
+        id="dashboardLink"
+        class="dashboard-link">
+
+        <a href="index.html">
+
+            Go to TaskFlow Dashboard →
+
+        </a>
+
+    </div>
+
+
+    <!-- =========================
+         FOOTER
+    ========================== -->
+
+    <div class="footer-text">
+
+        🚀 TaskFlow • Smart Task Management
+
+    </div>
+
+
+</div>
+
+
+<script>
+
+const API_URL =
+    "http://127.0.0.1:8000";
+
+
+// =====================================
+// SHOW LOGIN
+// =====================================
+
+function showLogin() {
+
+    document
+        .getElementById("loginForm")
+        .style.display = "block";
+
+
+    document
+        .getElementById("registerForm")
+        .style.display = "none";
+
+
+    document
+        .getElementById("forgotPasswordForm")
+        .style.display = "none";
+
+
+    document
+        .getElementById("authTabs")
+        .style.display = "flex";
+
+
+    document
+        .getElementById("loginTab")
+        .classList
+        .add("active");
+
+
+    document
+        .getElementById("registerTab")
+        .classList
+        .remove("active");
+
+
+    clearMessage();
+}
+
+
+// =====================================
+// SHOW REGISTER
+// =====================================
+
+function showRegister() {
+
+    document
+        .getElementById("loginForm")
+        .style.display = "none";
+
+
+    document
+        .getElementById("registerForm")
+        .style.display = "block";
+
+
+    document
+        .getElementById("forgotPasswordForm")
+        .style.display = "none";
+
+
+    document
+        .getElementById("authTabs")
+        .style.display = "flex";
+
+
+    document
+        .getElementById("loginTab")
+        .classList
+        .remove("active");
+
+
+    document
+        .getElementById("registerTab")
+        .classList
+        .add("active");
+
+
+    clearMessage();
+}
+
+
+// =====================================
+// SHOW FORGOT PASSWORD
+// =====================================
+
+function showForgotPassword() {
+
+    document
+        .getElementById("loginForm")
+        .style.display = "none";
+
+
+    document
+        .getElementById("registerForm")
+        .style.display = "none";
+
+
+    document
+        .getElementById("forgotPasswordForm")
+        .style.display = "block";
+
+
+    document
+        .getElementById("authTabs")
+        .style.display = "none";
+
+
+    clearMessage();
+}
+
+
+// =====================================
+// MESSAGE
+// =====================================
+
+function showMessage(
+    text,
+    type
+) {
+
+    const message =
+        document.getElementById("message");
+
+
+    message.textContent =
+        text;
+
+
+    message.className =
+        "message " + type;
+}
+
+
+function clearMessage() {
+
+    const message =
+        document.getElementById("message");
+
+
+    message.textContent =
+        "";
+
+
+    message.className =
+        "message";
+}
+
+
+// =====================================
+// REGISTER
+// =====================================
+
+document
+    .getElementById("registerForm")
+    .addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+            clearMessage();
+
+
+            const name =
+                document
+                    .getElementById("registerName")
+                    .value
+                    .trim();
+
+
+            const email =
+                document
+                    .getElementById("registerEmail")
+                    .value
+                    .trim();
+
+
+            const password =
+                document
+                    .getElementById("registerPassword")
+                    .value;
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/auth/register`,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+
+                                name: name,
+
+                                email: email,
+
+                                password: password
+
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    showMessage(
+                        data.detail ||
+                        "Registration failed.",
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                showMessage(
+                    "Account created successfully! 🎉 You can now login.",
+                    "success"
+                );
+
+
+                document
+                    .getElementById("registerForm")
+                    .reset();
+
+
+                setTimeout(
+                    function() {
+
+                        showLogin();
+
+                    },
+                    1200
+                );
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                showMessage(
+                    "Cannot connect to TaskFlow server.",
+                    "error"
+                );
+
+            }
+
+        }
+    );
+
+
+// =====================================
+// LOGIN
+// =====================================
+
+document
+    .getElementById("loginForm")
+    .addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+            clearMessage();
+
+
+            const email =
+                document
+                    .getElementById("loginEmail")
+                    .value
+                    .trim();
+
+
+            const password =
+                document
+                    .getElementById("loginPassword")
+                    .value;
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/auth/login`,
+                        {
+                            method: "POST",
+
+                            headers: {
+
+                                "Content-Type":
+                                    "application/json"
+
+                            },
+
+                            body: JSON.stringify({
+
+                                email: email,
+
+                                password: password
+
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    showMessage(
+                        data.detail ||
+                        "Login failed.",
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                localStorage.setItem(
+                    "taskflow_token",
+                    data.access_token
+                );
+
+
+                showMessage(
+                    "Login successful! 🎉",
+                    "success"
+                );
+
+
+                document
+                    .getElementById("dashboardLink")
+                    .style.display =
+                    "block";
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                showMessage(
+                    "Cannot connect to TaskFlow server.",
+                    "error"
+                );
+
+            }
+
+        }
+    );
+
+
+// =====================================
+// FORGOT PASSWORD
+// =====================================
+
+document
+    .getElementById("forgotPasswordForm")
+    .addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+            clearMessage();
+
+
+            const email =
+                document
+                    .getElementById("forgotEmail")
+                    .value
+                    .trim();
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/auth/forgot-password`,
+                        {
+                            method: "POST",
+
+                            headers: {
+
+                                "Content-Type":
+                                    "application/json"
+
+                            },
+
+                            body: JSON.stringify({
+
+                                email: email
+
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    showMessage(
+                        data.detail ||
+                        "Unable to process request.",
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                showMessage(
+                    data.message ||
+                    "If the email exists, a password reset link has been sent.",
+                    "success"
+                );
+
+
+                document
+                    .getElementById("forgotPasswordForm")
+                    .reset();
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                showMessage(
+                    "Cannot connect to TaskFlow server.",
+                    "error"
+                );
+
+            }
+
+        }
+    );
+
+</script>
+
+
+</body>
+
+</html>
+```
