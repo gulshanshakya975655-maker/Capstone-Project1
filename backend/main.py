@@ -1370,12 +1370,19 @@ def forgot_password(
     # the complete reset-password flow.
     # -----------------------------------------------------
 
+    # reset_link = (
+    #     "http://127.0.0.1:5500/frontend/"
+    #     "reset-password.html"
+    #     "?token="
+    #     + reset_token
+    # )
+
     reset_link = (
-        "http://127.0.0.1:5500/frontend/"
-        "reset-password.html"
-        "?token="
-        + reset_token
-    )
+    "https://capstone-project1-ovg9.onrender.com/"
+    "reset-password.html"
+    "?token="
+    + reset_token
+)
 
 
     print(
