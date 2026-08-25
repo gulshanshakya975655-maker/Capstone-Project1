@@ -1,9 +1,7 @@
-
 import time
 import re
 import os
 import secrets
-from fastapi.staticfiles import StaticFiles
 
 from datetime import datetime, timedelta, timezone
 
@@ -12,6 +10,7 @@ import jwt
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
+from fastapi.staticfiles import StaticFiles
 
 from pydantic import BaseModel, Field, field_validator, ValidationError
 
@@ -260,6 +259,7 @@ app.add_middleware(
     allow_origins=[
         "http://127.0.0.1:5500",
         "http://localhost:5500",
+        "https://capstone-project1-ovg9.onrender.com",
     ],
 
     allow_credentials=True,
@@ -1151,6 +1151,23 @@ def register(
     db.refresh(new_user)
 
 
+    # -----------------------------------------------------
+    # CREATE DEFAULT PROJECT
+    # -----------------------------------------------------
+    # Every new account gets a starter project so they can
+    # create tasks right away without an extra manual step.
+    # -----------------------------------------------------
+
+    default_project = models.Project(
+        name="My Tasks",
+        owner_id=new_user.id,
+    )
+
+    db.add(default_project)
+
+    db.commit()
+
+
     access_token = (
         create_access_token(
             new_user.id
@@ -1371,19 +1388,12 @@ def forgot_password(
     # the complete reset-password flow.
     # -----------------------------------------------------
 
-    # reset_link = (
-    #     "http://127.0.0.1:5500/frontend/"
-    #     "reset-password.html"
-    #     "?token="
-    #     + reset_token
-    # )
-
     reset_link = (
-    "https://capstone-project1-ovg9.onrender.com/"
-    "reset-password.html"
-    "?token="
-    + reset_token
-)
+        "https://capstone-project1-ovg9.onrender.com/"
+        "reset-password.html"
+        "?token="
+        + reset_token
+    )
 
 
     print(
@@ -2414,6 +2424,15 @@ def benchmark_algorithms(
                 ],
         },
     }
+ 
+ 
+# =========================================================
+# SERVE FRONTEND (HTML/CSS/JS)
+# =========================================================
+# This must stay at the very bottom of the file, after all
+# API routes above, so that API routes are matched first.
+# =========================================================
+ 
 app.mount(
     "/",
     StaticFiles(directory="frontend", html=True),
