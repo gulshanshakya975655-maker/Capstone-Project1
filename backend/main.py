@@ -3,6 +3,7 @@ import time
 import re
 import os
 import secrets
+from fastapi.staticfiles import StaticFiles
 
 from datetime import datetime, timedelta, timezone
 
@@ -2413,3 +2414,8 @@ def benchmark_algorithms(
                 ],
         },
     }
+app.mount(
+    "/",
+    StaticFiles(directory="frontend", html=True),
+    name="frontend",
+)
