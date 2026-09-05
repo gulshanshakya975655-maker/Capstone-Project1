@@ -283,13 +283,13 @@ app.add_middleware(
 # HOME
 # =========================================================
 
-@app.get("/")
-def home():
+# @app.get("/")
+# def home():
 
-    return {
-        "message": "TaskFlow API is running!",
-        "version": "3.0.0"
-    }
+#     return {
+#         "message": "TaskFlow API is running!",
+#         "version": "3.0.0"
+#     }
 
 
 # =========================================================
