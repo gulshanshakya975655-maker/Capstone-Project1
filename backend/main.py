@@ -260,6 +260,7 @@ app.add_middleware(
         "http://127.0.0.1:5500",
         "http://localhost:5500",
         "https://capstone-project1-ovg9.onrender.com",
+         "https://taskflow1-frontend.onrender.com",
     ],
 
     allow_credentials=True,
