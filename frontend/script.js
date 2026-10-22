@@ -1,7 +1,7 @@
 console.log("TaskFlow script.js loaded");
 
 // const API_URL = "http://127.0.0.1:8000";
-const API_URL = "https://capstone-project1-ovg9.onrender.com";
+const API_URL = "https://taskflow1-backend-z5gu.onrender.com";
 
 // =====================================================
 // ELEMENTS
